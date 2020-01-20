@@ -1,0 +1,298 @@
+/*!*******************************************************************************
+ *  \brief      This is the battery interface package for Rotors Simulator.
+ *  \authors    Ramon Suarez Fernandez
+ *              Hriday Bavle
+ *              Alberto Rodelgo Perales
+ *  \copyright  Copyright (c) 2019 Universidad Politecnica de Madrid
+ *              All rights reserved
+ *
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ ********************************************************************************/ 
+
+#include "tello_state_interface.h"
+
+using namespace std;
+
+StateInterface::StateInterface(){
+}   
+
+StateInterface::~StateInterface(){
+}
+
+void StateInterface::ownSetUp() {
+    this->stateSocket = new StateSocket(TELLO_STATE_PORT);
+
+    ros::param::get("~tello_drone_id", tello_drone_id);
+    ros::param::get("~tello_drone_model", tello_drone_model);
+}
+
+void StateInterface::ownStart(){
+    //Publisher
+    ros::NodeHandle n;
+    rotation_pub = n.advertise<geometry_msgs::Vector3Stamped>("sensor_measurement/rotation_angles", 1, true);
+    //rotation_sub=n.subscribe("sensor_measurement/rotation_angles", 1, &StateInterface::rotationCallback, this);
+
+    speed_pub = n.advertise<geometry_msgs::TwistStamped>("sensor_measurement/speed", 1, true);
+    //speed_sub=n.subscribe("self_localization/speed", 1, &StateInterface::speedCallback, this);
+
+    accel_pub = n.advertise<geometry_msgs::AccelStamped>("sensor_measurement/accel", 1, true);
+    //accel_sub=n.subscribe("self_localization/accel", 1, &StateInterface::accelCallback, this);
+
+    imu_pub = n.advertise<sensor_msgs::Imu>("sensor_measurement/imu", 1, true);
+    //imu_sub=n.subscribe("sensor_measurement/imu", 1, &StateInterface::imuCallback, this);
+
+    battery_pub = n.advertise<sensor_msgs::BatteryState>("sensor_measurement/battery_state", 1, true);
+    //battery_sub=n.subscribe("sensor_measurement/battery_state", 1, &StateInterface::batteryCallback, this);
+
+    temperature_pub = n.advertise<sensor_msgs::Temperature>("sensor_measurement/temperature", 1, true);
+    //temperature_sub=n.subscribe("sensor_measurement/temperature", 1, &StateInterface::temperatureCallback, this);
+
+    sea_level_pub = n.advertise<geometry_msgs::PointStamped>("sensor_measurement/sea_level", 1, true);
+    altitude_pub = n.advertise<geometry_msgs::PointStamped>("sensor_measurement/altitude", 1, true);
+
+    this->state_thread = new std::thread(&StateInterface::get_state, this);
+}
+
+void StateInterface::get_state()
+{
+    while (true)
+    {
+        std::string state = this->stateSocket->listen_once();
+
+        ros::Time current_timestamp = ros::Time::now();
+
+        if (!state.empty())
+        {
+            //cout << state << endl;
+
+            std::istringstream iss(state);
+
+            std::string token;
+            map<std::string, float> state_map;
+            while (std::getline(iss, token, ';'))
+            {
+                if (!token.empty())
+                {
+                    std::string key;
+                    std::string value_str;
+                    std::istringstream iss_token(token);
+                    std::getline(iss_token, key, ':');
+                    std::getline(iss_token, value_str, ':');
+
+                    state_map.insert(pair<std::string, float>(key, strtof(value_str.c_str(), 0)));
+                }
+            }
+
+            // ROTATION
+            float pitch = state_map.find("pitch")->second;
+            float roll = state_map.find("roll")->second;
+            float yaw = state_map.find("yaw")->second;
+            rotation_msg.header.stamp = current_timestamp;
+            rotation_msg.vector.x = pitch;
+            rotation_msg.vector.y = roll;
+            rotation_msg.vector.z = yaw;
+            rotation_pub.publish(rotation_msg);
+
+            // VELOCITY
+            float vgx = state_map.find("vgx")->second;
+            float vgy = state_map.find("vgy")->second;
+            float vgz = state_map.find("vgz")->second;
+            float x = (1 * roll) - (sin(pitch) * yaw);
+            float y = (cos(roll) * pitch) + (cos(pitch)*sin(roll) * yaw);
+            float z = (-sin(roll) * pitch) + (cos(pitch)*cos(roll) * yaw);
+            speed_msg.twist.linear.x = vgx;
+            speed_msg.twist.linear.y = vgy;
+            speed_msg.twist.linear.z = vgz;
+            speed_msg.twist.angular.x = x;
+            speed_msg.twist.angular.y = y;
+            speed_msg.twist.angular.z = z;
+            speed_pub.publish(speed_msg);
+
+            // ACCELERATION
+            float agx = state_map.find("agx")->second;
+            float agy = state_map.find("agy")->second;
+            float agz = state_map.find("agz")->second;
+            accel_msg.accel.linear.x = agx;
+            accel_msg.accel.linear.y = agy;
+            accel_msg.accel.linear.z = agz;
+            //accel_pub.publish(accel_msg);
+
+            // BATTERY
+            float battery = state_map.find("bat")->second;
+            battery_msg.header.stamp = current_timestamp;
+            battery_msg.voltage = 3.8;
+            battery_msg.capacity = 1.1;
+            battery_msg.percentage = battery;
+            battery_pub.publish(battery_msg);
+
+            // IMU
+            imu_msg.header.stamp = current_timestamp;
+            imu_msg.angular_velocity.x = x;
+            imu_msg.angular_velocity.y = y;
+            imu_msg.angular_velocity.z = z;
+            imu_msg.linear_acceleration.x = agx;
+            imu_msg.linear_acceleration.y = agy;
+            imu_msg.linear_acceleration.z = agz;
+            imu_msg.orientation.x = sin(roll/2) * cos(pitch/2) * cos(yaw/2) - cos(roll/2) * sin(pitch/2) * sin(yaw/2);
+            imu_msg.orientation.y = cos(roll/2) * sin(pitch/2) * cos(yaw/2) + sin(roll/2) * cos(pitch/2) * sin(yaw/2);
+            imu_msg.orientation.z = cos(roll/2) * cos(pitch/2) * sin(yaw/2) - sin(roll/2) * sin(pitch/2) * cos(yaw/2);
+            imu_msg.orientation.w = cos(roll/2) * cos(pitch/2) * cos(yaw/2) + sin(roll/2) * sin(pitch/2) * sin(yaw/2);
+            imu_pub.publish(imu_msg);
+
+            // TEMPERATURE
+            float templ = state_map.find("templ")->second;
+            float temph = state_map.find("temph")->second;
+            float mean = (templ + temph) / 2;
+            float variance = pow(temph - mean, 2.0);
+            temperature_msg.header.stamp = current_timestamp;
+            temperature_msg.temperature = mean;
+            temperature_msg.variance = variance;
+            temperature_pub.publish(temperature_msg);
+
+            // SEA LEVEL
+            float sea_level = state_map.find("baro")->second;
+            sea_level_msg.header.stamp = current_timestamp;
+            sea_level_msg.point.z = sea_level;
+            sea_level_pub.publish(sea_level_msg);
+
+            // ALTITUDE
+            float altitude = state_map.find("h")->second;
+            altitude_msg.header.stamp = current_timestamp;
+            altitude_msg.point.z = altitude;
+            altitude_pub.publish(altitude_msg);
+        }
+    }
+}
+
+//Stop
+void StateInterface::ownStop()
+{
+    rotation_pub.shutdown();
+    rotation_sub.shutdown();
+    speed_pub.shutdown();
+    speed_sub.shutdown();
+    accel_pub.shutdown();
+    accel_sub.shutdown();
+    battery_pub.shutdown();
+    battery_sub.shutdown();
+    temperature_pub.shutdown();
+    temperature_sub.shutdown();
+}
+
+//Reset
+bool StateInterface::resetValues()
+{
+    return true;
+}
+
+//Run
+void StateInterface::ownRun()
+{
+
+}
+
+void StateInterface::rotationCallback(const geometry_msgs::Vector3Stamped &msg)
+{
+    ros::Time current_timestamp = ros::Time::now();
+
+    rotation_msg.header = msg.header;
+    rotation_msg.header.stamp = current_timestamp;
+
+    rotation_msg.vector.x = msg.vector.x;
+    rotation_msg.vector.y = msg.vector.y;
+    rotation_msg.vector.z = msg.vector.z;
+}
+
+void StateInterface::speedCallback(const geometry_msgs::TwistStamped &msg)
+{
+    ros::Time current_timestamp = ros::Time::now();
+    speed_msg.header = msg.header;
+    speed_msg.header.stamp = current_timestamp;
+
+    speed_msg.twist.linear.x = msg.twist.linear.x;
+    speed_msg.twist.linear.y = msg.twist.linear.y;
+    speed_msg.twist.linear.z = msg.twist.linear.z;
+}
+
+void StateInterface::accelCallback(const geometry_msgs::AccelStamped &msg)
+{
+    ros::Time current_timestamp = ros::Time::now();
+    accel_msg.header = msg.header;
+    accel_msg.header.stamp = current_timestamp;
+
+    accel_msg.accel.linear.x = msg.accel.linear.x;
+    accel_msg.accel.linear.y = msg.accel.linear.y;
+    accel_msg.accel.linear.z = msg.accel.linear.z;
+}
+
+void StateInterface::imuCallback(const sensor_msgs::Imu &msg)
+{
+    ros::Time current_timestamp = ros::Time::now();
+    imu_msg.header = msg.header;
+    imu_msg.header.stamp = current_timestamp;
+}
+
+void StateInterface::batteryCallback(const sensor_msgs::BatteryState &msg)
+{
+    ros::Time current_timestamp = ros::Time::now();
+    battery_msg.header = msg.header;
+    battery_msg.header.stamp = current_timestamp;
+
+    battery_msg.percentage = msg.percentage;
+}
+
+void StateInterface::temperatureCallback(const sensor_msgs::Temperature &msg)
+{
+    ros::Time current_timestamp = ros::Time::now();
+    temperature_msg.header = msg.header;
+    temperature_msg.header.stamp = current_timestamp;
+
+    temperature_msg.temperature = msg.temperature;
+    temperature_msg.variance = msg.variance;
+}
+
+int main(int argc,char **argv)
+{
+    //Ros Init
+    ros::init(argc, argv, "StateInterface");
+
+    cout<<"[ROSNODE] Starting StateInterface"<<endl;
+
+    //Vars
+    StateInterface state_interface;
+    state_interface.setUp();
+    state_interface.start();
+    try
+    {
+        //Read messages
+        ros::spin();
+        return 1;
+    }
+    catch (std::exception &ex)
+    {
+        std::cout<<"[ROSNODE] Exception :"<<ex.what()<<std::endl;
+    }
+}
