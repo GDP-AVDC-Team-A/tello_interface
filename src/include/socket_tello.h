@@ -56,6 +56,7 @@ protected:
 
   boost::asio::io_service io_service;
   udp::socket socket;
+  std::thread thread;
   std::vector<unsigned char> packet_buffer;
 };
 

@@ -4,7 +4,7 @@ using namespace std;
 
 void TelloSocket::listen()
 {
-  std::thread(
+  thread = std::thread(
   [this]()
   {
     while (true) {
