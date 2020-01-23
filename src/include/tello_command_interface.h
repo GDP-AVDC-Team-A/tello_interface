@@ -1,6 +1,6 @@
 /*!*******************************************************************************
- *  \brief      This is the battery interface package for Rotors Simulator.
- *  \authors    Ramon Suarez Fernandez
+ *  \brief      This is the command interface package for Tello Interface.
+ *  \authors    Rodrigo Pueblas Núñez
  *              Hriday Bavle
  *              Alberto Rodelgo Perales
  *  \copyright  Copyright (c) 2019 Universidad Politecnica de Madrid
@@ -33,17 +33,13 @@
  ********************************************************************************/ 
 
 #include <iostream>
-#include <math.h>
-#include <cmath>
-#include <thread>
-#include <mutex>
 
 //// ROS  ///////
 #include "ros/ros.h"
 #include "cvg_string_conversions.h"
 #include <robot_process.h>
 
-#include "tello_driver.hpp"
+#include "socket_tello.h"
 
 #include <std_msgs/String.h>
 #include <geometry_msgs/PoseStamped.h>
@@ -84,13 +80,12 @@ private: /*RobotProcess*/
     std::string tello_drone_model;
     int tello_drone_id;
     int drone_id;
-    //TelloSocketClient* commandSocket;
     CommandSocket* commandSocket;
+
 protected:
     ros::Publisher command_pub;
     ros::Subscriber command_sub;
     void commandCallback(const std_msgs::String &msg);
-    std::timed_mutex command_mutex;
 
     // RC COMMAND
     message_filters::Subscriber<geometry_msgs::PoseStamped> roll_pitch_sub;

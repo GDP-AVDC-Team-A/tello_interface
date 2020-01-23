@@ -1,6 +1,6 @@
 /*!*******************************************************************************
- *  \brief      This is the battery interface package for Rotors Simulator.
- *  \authors    Ramon Suarez Fernandez
+ *  \brief      This is the state interface package for Tello Interface.
+ *  \authors    Rodrigo Pueblas Núñez
  *              Hriday Bavle
  *              Alberto Rodelgo Perales
  *  \copyright  Copyright (c) 2019 Universidad Politecnica de Madrid
@@ -53,22 +53,16 @@ void StateInterface::ownStart(){
     //Publisher
     ros::NodeHandle n;
     rotation_pub = n.advertise<geometry_msgs::Vector3Stamped>("sensor_measurement/rotation_angles", 1, true);
-    //rotation_sub=n.subscribe("sensor_measurement/rotation_angles", 1, &StateInterface::rotationCallback, this);
 
     speed_pub = n.advertise<geometry_msgs::TwistStamped>("sensor_measurement/speed", 1, true);
-    //speed_sub=n.subscribe("self_localization/speed", 1, &StateInterface::speedCallback, this);
 
     accel_pub = n.advertise<geometry_msgs::AccelStamped>("sensor_measurement/accel", 1, true);
-    //accel_sub=n.subscribe("self_localization/accel", 1, &StateInterface::accelCallback, this);
 
     imu_pub = n.advertise<sensor_msgs::Imu>("sensor_measurement/imu", 1, true);
-    //imu_sub=n.subscribe("sensor_measurement/imu", 1, &StateInterface::imuCallback, this);
 
     battery_pub = n.advertise<sensor_msgs::BatteryState>("sensor_measurement/battery_state", 1, true);
-    //battery_sub=n.subscribe("sensor_measurement/battery_state", 1, &StateInterface::batteryCallback, this);
 
     temperature_pub = n.advertise<sensor_msgs::Temperature>("sensor_measurement/temperature", 1, true);
-    //temperature_sub=n.subscribe("sensor_measurement/temperature", 1, &StateInterface::temperatureCallback, this);
 
     sea_level_pub = n.advertise<geometry_msgs::PointStamped>("sensor_measurement/sea_level", 1, true);
     altitude_pub = n.advertise<geometry_msgs::PointStamped>("sensor_measurement/altitude", 1, true);
@@ -86,8 +80,6 @@ void StateInterface::get_state()
 
         if (!state.empty())
         {
-            //cout << state << endl;
-
             std::istringstream iss(state);
 
             std::string token;
@@ -191,15 +183,13 @@ void StateInterface::get_state()
 void StateInterface::ownStop()
 {
     rotation_pub.shutdown();
-    rotation_sub.shutdown();
     speed_pub.shutdown();
-    speed_sub.shutdown();
     accel_pub.shutdown();
-    accel_sub.shutdown();
     battery_pub.shutdown();
-    battery_sub.shutdown();
     temperature_pub.shutdown();
-    temperature_sub.shutdown();
+    imu_pub.shutdown();
+    sea_level_pub.shutdown();
+    altitude_pub.shutdown();
 }
 
 //Reset
@@ -212,66 +202,6 @@ bool StateInterface::resetValues()
 void StateInterface::ownRun()
 {
 
-}
-
-void StateInterface::rotationCallback(const geometry_msgs::Vector3Stamped &msg)
-{
-    ros::Time current_timestamp = ros::Time::now();
-
-    rotation_msg.header = msg.header;
-    rotation_msg.header.stamp = current_timestamp;
-
-    rotation_msg.vector.x = msg.vector.x;
-    rotation_msg.vector.y = msg.vector.y;
-    rotation_msg.vector.z = msg.vector.z;
-}
-
-void StateInterface::speedCallback(const geometry_msgs::TwistStamped &msg)
-{
-    ros::Time current_timestamp = ros::Time::now();
-    speed_msg.header = msg.header;
-    speed_msg.header.stamp = current_timestamp;
-
-    speed_msg.twist.linear.x = msg.twist.linear.x;
-    speed_msg.twist.linear.y = msg.twist.linear.y;
-    speed_msg.twist.linear.z = msg.twist.linear.z;
-}
-
-void StateInterface::accelCallback(const geometry_msgs::AccelStamped &msg)
-{
-    ros::Time current_timestamp = ros::Time::now();
-    accel_msg.header = msg.header;
-    accel_msg.header.stamp = current_timestamp;
-
-    accel_msg.accel.linear.x = msg.accel.linear.x;
-    accel_msg.accel.linear.y = msg.accel.linear.y;
-    accel_msg.accel.linear.z = msg.accel.linear.z;
-}
-
-void StateInterface::imuCallback(const sensor_msgs::Imu &msg)
-{
-    ros::Time current_timestamp = ros::Time::now();
-    imu_msg.header = msg.header;
-    imu_msg.header.stamp = current_timestamp;
-}
-
-void StateInterface::batteryCallback(const sensor_msgs::BatteryState &msg)
-{
-    ros::Time current_timestamp = ros::Time::now();
-    battery_msg.header = msg.header;
-    battery_msg.header.stamp = current_timestamp;
-
-    battery_msg.percentage = msg.percentage;
-}
-
-void StateInterface::temperatureCallback(const sensor_msgs::Temperature &msg)
-{
-    ros::Time current_timestamp = ros::Time::now();
-    temperature_msg.header = msg.header;
-    temperature_msg.header.stamp = current_timestamp;
-
-    temperature_msg.temperature = msg.temperature;
-    temperature_msg.variance = msg.variance;
 }
 
 int main(int argc,char **argv)

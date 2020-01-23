@@ -5,114 +5,71 @@ from droneMsgsROS.msg import droneCommand
 from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import TwistStamped
 
+print("PRESS Q or ESC TO EXIT")
+
+SPEED = 0.3
+
+def sendRc(pitch, roll, yaw, altitude):
+    msg1 = PoseStamped()
+    msg1.pose.orientation.x = roll
+    msg1.pose.orientation.y = pitch
+    msg1.pose.orientation.z = 0
+    msg1.pose.orientation.w = 0.997
+    msg2 = TwistStamped()
+    msg2.twist.angular.z = yaw #YAW
+    msg2.twist.linear.z = altitude #ALTITUDE
+    pub_pitchRoll.publish(msg1)
+    pub_yawAltitude.publish(msg2)
+
+def emergency():
+    msg = droneCommand()
+    msg.command = msg.EMERGENCY_STOP
+    pub_highLevel.publish(msg)
+
+def land():
+    msg = droneCommand()
+    msg.command = msg.LAND
+    pub_highLevel.publish(msg)
+
+def takeoff():
+    msg = droneCommand()
+    msg.command = msg.TAKE_OFF
+    pub_highLevel.publish(msg)
+
+def on_press(key):
+    print('{0} pressed'.format(key))
 
 def on_press(key):
     print('{0} pressed'.format(key))
     if str(key) == "'t'":
-        msg = droneCommand()
-        msg.command = msg.TAKE_OFF
-        pub_highLevel.publish(msg)
+        takeoff()
     if str(key) == "'y'":
-        msg = droneCommand()
-        msg.command = msg.LAND
-        pub_highLevel.publish(msg)
+        land()
+    if str(key) == "'e'":
+        emergency()
     if (key == Key.up):
-        msg1 = PoseStamped()
-        msg1.pose.orientation.x = 0
-        msg1.pose.orientation.y = 0.3
-        msg1.pose.orientation.z = 0
-        msg1.pose.orientation.w = 0.997
-        msg2 = TwistStamped()
-        msg2.twist.angular.z = 0 #YAW
-        msg2.twist.linear.z = 0 #ALTITUDE
-        pub_pitchRoll.publish(msg1)
-        pub_yawAltitude.publish(msg2)
+        sendRc(SPEED,0,0,0)
     elif (key == Key.down):
-        msg1 = PoseStamped()
-        msg1.pose.orientation.x = 0
-        msg1.pose.orientation.y = -0.3
-        msg1.pose.orientation.z = 0
-        msg1.pose.orientation.w = 0.997
-        msg2 = TwistStamped()
-        msg2.twist.angular.z = 0 #YAW
-        msg2.twist.linear.z = 0 #ALTITUDE
-        pub_pitchRoll.publish(msg1)
-        pub_yawAltitude.publish(msg2)
+        sendRc(-SPEED,0,0,0)
     elif(key == Key.left):
-        msg1 = PoseStamped()
-        msg1.pose.orientation.x = -0.3
-        msg1.pose.orientation.y = 0
-        msg1.pose.orientation.z = 0
-        msg1.pose.orientation.w = 0.997
-        msg2 = TwistStamped()
-        msg2.twist.angular.z = 0 #YAW
-        msg2.twist.linear.z = 0 #ALTITUDE
-        pub_pitchRoll.publish(msg1)
-        pub_yawAltitude.publish(msg2)
+        sendRc(0,-SPEED,0,0)
     elif(key == Key.right):
-        msg1 = PoseStamped()
-        msg1.pose.orientation.x = 0.3
-        msg1.pose.orientation.y = 0
-        msg1.pose.orientation.z = 0
-        msg1.pose.orientation.w = 0.997
-        msg2 = TwistStamped()
-        msg2.twist.angular.z = 0 #YAW
-        msg2.twist.linear.z = 0 #ALTITUDE
-        pub_pitchRoll.publish(msg1)
-        pub_yawAltitude.publish(msg2)
+        sendRc(0,SPEED,0,0)
     elif(str(key) == "'w'"):
-        msg1 = PoseStamped()
-        msg1.pose.orientation.x = 0
-        msg1.pose.orientation.y = 0
-        msg1.pose.orientation.z = 0
-        msg1.pose.orientation.w = 0
-        msg2 = TwistStamped()
-        msg2.twist.angular.z = 0 #YAW
-        msg2.twist.linear.z = 0.5 #ALTITUDE
-        pub_pitchRoll.publish(msg1)
-        pub_yawAltitude.publish(msg2)
+        sendRc(0,0,0,SPEED)
     elif(str(key) == "'s'"):
-        msg1 = PoseStamped()
-        msg1.pose.orientation.x = 0
-        msg1.pose.orientation.y = 0
-        msg1.pose.orientation.z = 0
-        msg1.pose.orientation.w = 0
-        msg2 = TwistStamped()
-        msg2.twist.angular.z = 0 #YAW
-        msg2.twist.linear.z = -0.5 #ALTITUDE
-        pub_pitchRoll.publish(msg1)
-        pub_yawAltitude.publish(msg2)
+        sendRc(0,0,0,-SPEED)
     elif(str(key) == "'d'"):
-        msg1 = PoseStamped()
-        msg1.pose.orientation.x = 0
-        msg1.pose.orientation.y = 0
-        msg1.pose.orientation.z = 0
-        msg1.pose.orientation.w = 0
-        msg2 = TwistStamped()
-        msg2.twist.angular.z = 0.5 #YAW
-        msg2.twist.linear.z = 0 #ALTITUDE
-        pub_pitchRoll.publish(msg1)
-        pub_yawAltitude.publish(msg2)
+        sendRc(0,0,SPEED,0)
     elif(str(key) == "'a'"):
-        msg1 = PoseStamped()
-        msg1.pose.orientation.x = 0
-        msg1.pose.orientation.y = 0
-        msg1.pose.orientation.z = 0
-        msg1.pose.orientation.w = 0
-        msg2 = TwistStamped()
-        msg2.twist.angular.z = -0.5 #YAW
-        msg2.twist.linear.z = 0 #ALTITUDE
-        pub_pitchRoll.publish(msg1)
-        pub_yawAltitude.publish(msg2)
+        sendRc(0,0,-SPEED,0)
         
-
 def on_release(key):
-    print('{0} release'.format(
-        key))
     string = "rc 0 0 0 0"
-    #pub.publish(string)
     if key == Key.esc:
         # Stop listener
+        return False
+    if (str(key) == "'q'"):
         return False
 
 # Collect events until released

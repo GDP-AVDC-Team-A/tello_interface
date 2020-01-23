@@ -6,114 +6,69 @@ from droneMsgsROS.msg import dronePitchRollCmd
 from droneMsgsROS.msg import droneDYawCmd
 from droneMsgsROS.msg import droneDAltitudeCmd
 
+print("PRESS Q or ESC TO EXIT")
+
+SPEED = 0.5
+
+def sendRc(pitch, roll, yaw, altitude):
+    msg1 = dronePitchRollCmd()
+    msg1.pitchCmd = pitch
+    msg1.rollCmd = roll
+    msg2 = droneDYawCmd()
+    msg2.dYawCmd = yaw
+    msg3 = droneDAltitudeCmd()
+    msg3.dAltitudeCmd = altitude
+    pub_pitchRoll.publish(msg1)
+    pub_yaw.publish(msg2)
+    pub_altitude.publish(msg3)
+
+def emergency():
+    msg = droneCommand()
+    msg.command = msg.EMERGENCY_STOP
+    pub_highLevel.publish(msg)
+
+def land():
+    msg = droneCommand()
+    msg.command = msg.LAND
+    pub_highLevel.publish(msg)
+
+def takeoff():
+    msg = droneCommand()
+    msg.command = msg.TAKE_OFF
+    pub_highLevel.publish(msg)
 
 def on_press(key):
     print('{0} pressed'.format(key))
+
     if str(key) == "'t'":
-        msg = droneCommand()
-        msg.command = msg.TAKE_OFF
-        pub_highLevel.publish(msg)
+        takeoff()
     if str(key) == "'y'":
-        msg = droneCommand()
-        msg.command = msg.LAND
-        pub_highLevel.publish(msg)
+        land()
+    if str(key) == "'e'":
+        emergency()
     if (key == Key.up):
-        msg1 = dronePitchRollCmd()
-        msg1.pitchCmd = 0.5
-        msg1.rollCmd = 0
-        msg2 = droneDYawCmd()
-        msg2.dYawCmd = 0
-        msg3 = droneDAltitudeCmd()
-        msg3.dAltitudeCmd = 0
-        pub_pitchRoll.publish(msg1)
-        pub_yaw.publish(msg2)
-        pub_altitude.publish(msg3)
+        sendRc(SPEED,0,0,0)
     elif (key == Key.down):
-        msg1 = dronePitchRollCmd()
-        msg1.pitchCmd = -0.5
-        msg1.rollCmd = 0
-        msg2 = droneDYawCmd()
-        msg2.dYawCmd = 0
-        msg3 = droneDAltitudeCmd()
-        msg3.dAltitudeCmd = 0
-        pub_pitchRoll.publish(msg1)
-        pub_yaw.publish(msg2)
-        pub_altitude.publish(msg3)
+        sendRc(-SPEED,0,0,0)
     elif(key == Key.left):
-        msg1 = dronePitchRollCmd()
-        msg1.pitchCmd = 0
-        msg1.rollCmd = -0.5
-        msg2 = droneDYawCmd()
-        msg2.dYawCmd = 0
-        msg3 = droneDAltitudeCmd()
-        msg3.dAltitudeCmd = 0
-        pub_pitchRoll.publish(msg1)
-        pub_yaw.publish(msg2)
-        pub_altitude.publish(msg3)
+        sendRc(0,-SPEED,0,0)
     elif(key == Key.right):
-        msg1 = dronePitchRollCmd()
-        msg1.pitchCmd = 0
-        msg1.rollCmd = 0.5
-        msg2 = droneDYawCmd()
-        msg2.dYawCmd = 0
-        msg3 = droneDAltitudeCmd()
-        msg3.dAltitudeCmd = 0
-        pub_pitchRoll.publish(msg1)
-        pub_yaw.publish(msg2)
-        pub_altitude.publish(msg3)
+        sendRc(0,SPEED,0,0)
     elif(str(key) == "'w'"):
-        msg1 = dronePitchRollCmd()
-        msg1.pitchCmd = 0
-        msg1.rollCmd = 0
-        msg2 = droneDYawCmd()
-        msg2.dYawCmd = 0
-        msg3 = droneDAltitudeCmd()
-        msg3.dAltitudeCmd = 0.5
-        pub_pitchRoll.publish(msg1)
-        pub_yaw.publish(msg2)
-        pub_altitude.publish(msg3)
+        sendRc(0,0,0,SPEED)
     elif(str(key) == "'s'"):
-        msg1 = dronePitchRollCmd()
-        msg1.pitchCmd = 0
-        msg1.rollCmd = 0
-        msg2 = droneDYawCmd()
-        msg2.dYawCmd = 0
-        msg3 = droneDAltitudeCmd()
-        msg3.dAltitudeCmd = -0.5
-        pub_pitchRoll.publish(msg1)
-        pub_yaw.publish(msg2)
-        pub_altitude.publish(msg3)
+        sendRc(0,0,0,-SPEED)
     elif(str(key) == "'d'"):
-        msg1 = dronePitchRollCmd()
-        msg1.pitchCmd = 0
-        msg1.rollCmd = 0
-        msg2 = droneDYawCmd()
-        msg2.dYawCmd = 0.5
-        msg3 = droneDAltitudeCmd()
-        msg3.dAltitudeCmd = 0
-        pub_pitchRoll.publish(msg1)
-        pub_yaw.publish(msg2)
-        pub_altitude.publish(msg3)
+        sendRc(0,0,SPEED,0)
     elif(str(key) == "'a'"):
-        msg1 = dronePitchRollCmd()
-        msg1.pitchCmd = 0
-        msg1.rollCmd = 0
-        msg2 = droneDYawCmd()
-        msg2.dYawCmd = -0.5
-        msg3 = droneDAltitudeCmd()
-        msg3.dAltitudeCmd = 0
-        pub_pitchRoll.publish(msg1)
-        pub_yaw.publish(msg2)
-        pub_altitude.publish(msg3)
-        
+        sendRc(0,0,-SPEED,0)
 
 def on_release(key):
-    print('{0} release'.format(
-        key))
     string = "rc 0 0 0 0"
-    #pub.publish(string)
     if key == Key.esc:
         # Stop listener
+        return False
+    if (str(key) == "'q'"):
         return False
 
 # Collect events until released
@@ -128,5 +83,3 @@ with Listener(
     rospy.init_node('joystick', anonymous=True)
     rate = rospy.Rate(10) # 10hz
     listener.join()
-
-

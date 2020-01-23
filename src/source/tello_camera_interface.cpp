@@ -1,6 +1,6 @@
 /*!*******************************************************************************
- *  \brief      This is the battery interface package for Rotors Simulator.
- *  \authors    Ramon Suarez Fernandez
+ *  \brief      This is the camera interface package for Tello Interface.
+ *  \authors    Rodrigo Pueblas Núñez
  *              Hriday Bavle
  *              Alberto Rodelgo Perales
  *  \copyright  Copyright (c) 2019 Universidad Politecnica de Madrid
@@ -43,20 +43,14 @@ CameraInterface::~CameraInterface(){
 }
 
 void CameraInterface::ownSetUp() {
-    //this->cameraSocket = new TelloSocketServer(TELLO_SERVER_ADDRESS, TELLO_CAMERA_PORT);
-
     ros::param::get("~tello_drone_id", tello_drone_id);
     ros::param::get("~tello_drone_model", tello_drone_model);
 }
 
 void CameraInterface::ownStart(){
-    
-    //this->cameraSocket->setup_connection();
-
     //Publisher
     ros::NodeHandle n;
     camera_pub = n.advertise<sensor_msgs::Image>("sensor_measurement/camera", 1, true);
-    camera_sub=n.subscribe("sensor_measurement/camera", 1, &CameraInterface::cameraCallback, this);
 
     this->cameraSocket = new VideoSocket(TELLO_CAMERA_PORT, camera_pub);
 }
@@ -65,7 +59,6 @@ void CameraInterface::ownStart(){
 void CameraInterface::ownStop()
 {
     camera_pub.shutdown();
-    camera_sub.shutdown();
 }
 
 //Reset
@@ -78,14 +71,6 @@ bool CameraInterface::resetValues()
 void CameraInterface::ownRun()
 {
 
-}
-
-void CameraInterface::cameraCallback(const sensor_msgs::Image &msg)
-{
-    ros::Time current_timestamp = ros::Time::now();
-
-    camera_msg.header = msg.header;
-    camera_msg.header.stamp = current_timestamp;
 }
 
 int main(int argc,char **argv)

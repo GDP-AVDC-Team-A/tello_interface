@@ -1,6 +1,6 @@
 /*!*******************************************************************************
- *  \brief      This is the battery interface package for Rotors Simulator.
- *  \authors    Ramon Suarez Fernandez
+ *  \brief      This is the camera interface package for Tello Interface.
+ *  \authors    Rodrigo Pueblas Núñez
  *              Hriday Bavle
  *              Alberto Rodelgo Perales
  *  \copyright  Copyright (c) 2019 Universidad Politecnica de Madrid
@@ -33,22 +33,12 @@
  ********************************************************************************/ 
 
 #include <iostream>
-#include <math.h>
-#include <cmath>
-#include <thread>
 
 //// ROS  ///////
 #include "ros/ros.h"
 #include <robot_process.h>
 
-#include "tello_driver.hpp"
-
-#include <sensor_msgs/Image.h>
-#include <std_msgs/Header.h>
-
-#include <libavutil/frame.h>
-#include "h264decoder.hpp"
-#include <cv_bridge/cv_bridge.h>
+#include "socket_tello.h"
 
 class CameraInterface : public RobotProcess
 {
@@ -71,24 +61,9 @@ private: /*RobotProcess*/
     std::string tello_drone_model;
     int tello_drone_id;
     int drone_id;
-    //TelloSocketServer* cameraSocket;
 
     VideoSocket* cameraSocket;
 
-    std::vector<unsigned char> current_frame;
-    H264Decoder decoder_;
-    ConverterRGB24 converter_;
-
-    bool first_packet;
-    size_t seq_buffer_next_ = 0;
-    std::vector<unsigned char> raw_packet;
-    void decode_frames();
-    void process_packet(size_t r);
-    //Publisher
 protected:
     ros::Publisher camera_pub;
-    ros::Subscriber camera_sub;
-    void cameraCallback(const sensor_msgs::Image &msg);
-
-    sensor_msgs::Image camera_msg;
 };

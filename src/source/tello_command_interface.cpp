@@ -1,6 +1,6 @@
 /*!*******************************************************************************
- *  \brief      This is the battery interface package for Rotors Simulator.
- *  \authors    Ramon Suarez Fernandez
+ *  \brief      This is the command interface package for Tello Interface.
+ *  \authors    Rodrigo Pueblas Núñez
  *              Hriday Bavle
  *              Alberto Rodelgo Perales
  *  \copyright  Copyright (c) 2019 Universidad Politecnica de Madrid
@@ -60,9 +60,9 @@ void CommandInterface::ownStart()
 {
     cout<<"[ROSNODE] Command ownSart"<<endl;
 
-    this->commandSocket->initiate_command("command", true);
-
-    this->commandSocket->initiate_command("streamon", true);
+    this->commandSocket->send_command("command");
+    usleep(200);
+    this->commandSocket->send_command("streamon");
 
     ros::NodeHandle n;
     command_pub = n.advertise<std_msgs::String>("command", 1, true);
@@ -100,7 +100,8 @@ void CommandInterface::stay_alive()
 //Stop
 void CommandInterface::ownStop()
 {
-
+    command_pub.shutdown();
+    command_sub.shutdown();
 }
 
 //Reset
@@ -118,7 +119,7 @@ void CommandInterface::ownRun()
 void CommandInterface::commandCallback(const std_msgs::String &msg)
 {
     cout << "Command: " << msg.data << endl;
-    this->commandSocket->initiate_command(msg.data.c_str(), false);
+    this->commandSocket->send_command(msg.data.c_str());
     command_msg.data = msg.data;
 }
 
@@ -152,7 +153,7 @@ void CommandInterface::angularVelocityCallback(const geometry_msgs::PoseStamped&
     << " " << static_cast<int>(round(altitude * 100))
     << " " << static_cast<int>(round(yaw * 100));
 
-    this->commandSocket->initiate_command(rc.str().c_str(), false);
+    this->commandSocket->send_command(rc.str().c_str());
     cout << "Command: " << rc.str() << endl;
 }
 
@@ -164,7 +165,7 @@ void CommandInterface::rcCallback(const droneMsgsROS::dronePitchRollCmd& roll_pi
     << " " << static_cast<int>(round(altitude.dAltitudeCmd * 100))
     << " " << static_cast<int>(round(yaw.dYawCmd * 100));
 
-    this->commandSocket->initiate_command(rc.str().c_str(), false);
+    this->commandSocket->send_command(rc.str().c_str());
     cout << "Command: " << rc.str() << endl;
 }
 
@@ -174,20 +175,20 @@ void CommandInterface::commandEnumCallback(const droneMsgsROS::droneCommand::Con
     switch(msg->command)
     {
     case droneMsgsROS::droneCommand::TAKE_OFF:
-        //response = this->commandSocket->send_command("takeoff");
         cout << "[commandEnumCallback] Taking off" << endl;
-        this->commandSocket->initiate_command("takeoff", false);
-        //cout << "Command: TAKE_OFF, Response: " << response << endl;
+        this->commandSocket->send_command("takeoff");
         break;
     case droneMsgsROS::droneCommand::LAND:
-        //response = this->commandSocket->send_command("land");
-        this->commandSocket->initiate_command("land", false);
-        //cout << "Command: LAND, Response: " << response << endl;
+        cout << "[commandEnumCallback] Landing" << response << endl;
+        this->commandSocket->send_command("land");
         break;
     case droneMsgsROS::droneCommand::HOVER:
-        //response = this->commandSocket->send_command("rc 0 0 0 0");
-        this->commandSocket->initiate_command("rc 0 0 0 0", false);
-        //cout << "Command: HOVER, Response: " << response << endl;
+        cout << "[commandEnumCallback] Hovering" << response << endl;
+        this->commandSocket->send_command("rc 0 0 0 0");
+        break;
+    case droneMsgsROS::droneCommand::EMERGENCY_STOP:
+        cout << "[commandEnumCallback] Emergency" << response << endl;
+        this->commandSocket->send_command("emergency");
         break;
     default:
         break;

@@ -1,6 +1,6 @@
 /*!*******************************************************************************
- *  \brief      This is the battery interface package for Rotors Simulator.
- *  \authors    Ramon Suarez Fernandez
+ *  \brief      This is the state interface package for Tello Interface.
+ *  \authors    Rodrigo Pueblas Núñez
  *              Hriday Bavle
  *              Alberto Rodelgo Perales
  *  \copyright  Copyright (c) 2019 Universidad Politecnica de Madrid
@@ -33,15 +33,12 @@
  ********************************************************************************/ 
 
 #include <iostream>
-#include <math.h>
-#include <cmath>
-#include <thread>
 
 //// ROS  ///////
 #include "ros/ros.h"
 #include <robot_process.h>
 
-#include "tello_driver.hpp"
+#include "socket_tello.h"
 
 #include <geometry_msgs/Vector3Stamped.h>
 #include <geometry_msgs/TwistStamped.h>
@@ -77,27 +74,11 @@ private: /*RobotProcess*/
     //Publisher
 protected:
     ros::Publisher rotation_pub;
-    ros::Subscriber rotation_sub;
-    void rotationCallback(const geometry_msgs::Vector3Stamped &msg);
     ros::Publisher speed_pub;
-    ros::Subscriber speed_sub;
-    void speedCallback(const geometry_msgs::TwistStamped &msg);
     ros::Publisher accel_pub;
-    ros::Subscriber accel_sub;
-    void accelCallback(const geometry_msgs::AccelStamped &msg);
-
     ros::Publisher imu_pub;
-    ros::Subscriber imu_sub;
-    void imuCallback(const sensor_msgs::Imu &msg);
-
     ros::Publisher battery_pub;
-    ros::Subscriber battery_sub;
-    void batteryCallback(const sensor_msgs::BatteryState &msg);
-
     ros::Publisher temperature_pub;
-    ros::Subscriber temperature_sub;
-    void temperatureCallback(const sensor_msgs::Temperature &msg);
-
     ros::Publisher sea_level_pub;
     ros::Publisher altitude_pub;
 
