@@ -72,11 +72,15 @@ void StateInterface::ownStart(){
 
 void StateInterface::get_state()
 {
+    ros::Time current_timestamp = ros::Time::now();
+    ros::Time prev_timestamp = ros::Time::now();
+    double prev_roll = 0;
+    double prev_pitch = 0;
+    double prev_yaw = 0;
     while (true)
     {
         std::string state = this->stateSocket->listen_once();
 
-        ros::Time current_timestamp = ros::Time::now();
 
         if (!state.empty())
         {
@@ -98,6 +102,8 @@ void StateInterface::get_state()
                 }
             }
 
+            current_timestamp = ros::Time::now();
+
             // ROTATION
             float pitch = state_map.find("pitch")->second;
             float roll = state_map.find("roll")->second;
@@ -109,12 +115,41 @@ void StateInterface::get_state()
             rotation_pub.publish(rotation_msg);
 
             // VELOCITY
-            float vgx = state_map.find("vgx")->second;
+            float vgx = state_map.find("vgx")->second; 
             float vgy = state_map.find("vgy")->second;
             float vgz = state_map.find("vgz")->second;
-            float x = (1 * roll) - (sin(pitch) * yaw);
-            float y = (cos(roll) * pitch) + (cos(pitch)*sin(roll) * yaw);
-            float z = (-sin(roll) * pitch) + (cos(pitch)*cos(roll) * yaw);
+
+            // degrees to radians
+            float roll_rad = roll * M_PI / 180.0f;
+            float pitch_rad = -pitch * M_PI / 180.0f;
+            float yaw_rad = -yaw * M_PI / 180.0f;
+
+            //current_time_ = (double) ros::Time::now().sec + ((double) ros::Time::now().nsec / (double) 1E9);
+            double diffTime = (current_timestamp - prev_timestamp).nsec / 1E9;
+
+            double dRoll = 0;
+            double dPitch = 0;
+            double dYaw = 0;
+            if (diffTime != 0)
+            {
+                dRoll = roll_rad / diffTime;
+                dPitch = pitch_rad / diffTime;
+                dYaw = yaw_rad / diffTime;
+            }
+
+            dRoll = roll_rad - prev_roll;
+            dPitch = pitch_rad - prev_pitch;
+            dYaw = yaw_rad - prev_yaw;
+
+            prev_roll = roll_rad;
+            prev_pitch = pitch_rad;
+            prev_yaw = yaw_rad;
+
+            float x = (1 * dRoll) - (sin(pitch_rad) * dYaw);
+            float y = (cos(roll_rad) * dPitch) + (cos(pitch_rad)*sin(roll_rad) * dYaw);
+            float z = (-sin(roll_rad) * dPitch) + (cos(roll_rad)*cos(pitch_rad) * dYaw);
+            
+            speed_msg.header.stamp = current_timestamp;
             speed_msg.twist.linear.x = vgx;
             speed_msg.twist.linear.y = vgy;
             speed_msg.twist.linear.z = vgz;
@@ -127,9 +162,10 @@ void StateInterface::get_state()
             float agx = state_map.find("agx")->second;
             float agy = state_map.find("agy")->second;
             float agz = state_map.find("agz")->second;
-            accel_msg.accel.linear.x = agx;
-            accel_msg.accel.linear.y = agy;
-            accel_msg.accel.linear.z = agz;
+            // to m^2/s
+            accel_msg.accel.linear.x = agx / -100; //pos delante
+            accel_msg.accel.linear.y = agy / 100; //pos izq
+            accel_msg.accel.linear.z = agz / -100;
             //accel_pub.publish(accel_msg);
 
             // BATTERY
@@ -137,7 +173,8 @@ void StateInterface::get_state()
             battery_msg.header.stamp = current_timestamp;
             battery_msg.voltage = 3.8;
             battery_msg.capacity = 1.1;
-            battery_msg.percentage = battery;
+            //battery percentage goes from 0 to 1
+            battery_msg.percentage = battery / 100;
             battery_pub.publish(battery_msg);
 
             // IMU
@@ -145,13 +182,18 @@ void StateInterface::get_state()
             imu_msg.angular_velocity.x = x;
             imu_msg.angular_velocity.y = y;
             imu_msg.angular_velocity.z = z;
-            imu_msg.linear_acceleration.x = agx;
-            imu_msg.linear_acceleration.y = agy;
-            imu_msg.linear_acceleration.z = agz;
-            imu_msg.orientation.x = sin(roll/2) * cos(pitch/2) * cos(yaw/2) - cos(roll/2) * sin(pitch/2) * sin(yaw/2);
-            imu_msg.orientation.y = cos(roll/2) * sin(pitch/2) * cos(yaw/2) + sin(roll/2) * cos(pitch/2) * sin(yaw/2);
-            imu_msg.orientation.z = cos(roll/2) * cos(pitch/2) * sin(yaw/2) - sin(roll/2) * sin(pitch/2) * cos(yaw/2);
-            imu_msg.orientation.w = cos(roll/2) * cos(pitch/2) * cos(yaw/2) + sin(roll/2) * sin(pitch/2) * sin(yaw/2);
+            // to m^2/s
+            imu_msg.linear_acceleration.x = agx / -100;
+            imu_msg.linear_acceleration.y = agy / 100;
+            imu_msg.linear_acceleration.z = agz / -100;
+
+            tf::Quaternion quaternion = tf::createQuaternionFromRPY(roll_rad, pitch_rad, yaw_rad);
+
+            imu_msg.orientation.x = quaternion.getX();
+            imu_msg.orientation.y = quaternion.getY();
+            imu_msg.orientation.z = quaternion.getZ();
+            imu_msg.orientation.w = quaternion.getW();
+
             imu_pub.publish(imu_msg);
 
             // TEMPERATURE
@@ -173,8 +215,11 @@ void StateInterface::get_state()
             // ALTITUDE
             float altitude = state_map.find("h")->second;
             altitude_msg.header.stamp = current_timestamp;
-            altitude_msg.point.z = altitude;
+            // to meters
+            altitude_msg.point.z = altitude / 100;
             altitude_pub.publish(altitude_msg);
+
+            prev_timestamp = current_timestamp;
         }
     }
 }
