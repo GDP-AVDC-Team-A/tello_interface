@@ -149,7 +149,7 @@ void CommandInterface::angularVelocityCallback(const geometry_msgs::PoseStamped&
 
     std::ostringstream rc;
     rc << "rc " << static_cast<int>(round(roll * 100))
-    << " " << static_cast<int>(round(pitch * 100))
+    << " " << static_cast<int>(round(-pitch * 100))
     << " " << static_cast<int>(round(altitude * 100))
     << " " << static_cast<int>(round(yaw * 100));
 
