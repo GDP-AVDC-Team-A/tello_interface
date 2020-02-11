@@ -152,7 +152,7 @@ void StateInterface::get_state()
             speed_msg.header.stamp = current_timestamp;
             speed_msg.twist.linear.x = vgx;
             speed_msg.twist.linear.y = vgy;
-            speed_msg.twist.linear.z = vgz;
+            speed_msg.twist.linear.z = -vgz;
             speed_msg.twist.angular.x = x;
             speed_msg.twist.angular.y = y;
             speed_msg.twist.angular.z = z;

@@ -74,7 +74,7 @@ void CommandInterface::ownStart()
     sync.connectInput(roll_pitch_sub, altitude_yaw_sub);
     sync.registerCallback(&CommandInterface::angularVelocityCallback, this);
 
-    // DEPRECATED
+    //DEPRECATED
     roll_pitch_dep_sub.subscribe(n, "command/pitch_roll", 1);
     altitude_dep_sub.subscribe(n, "command/dAltitude", 1);
     yaw_dep_sub.subscribe(n, "command/dYaw", 1);
@@ -125,6 +125,12 @@ void CommandInterface::commandCallback(const std_msgs::String &msg)
 
 void CommandInterface::angularVelocityCallback(const geometry_msgs::PoseStamped& pose_stamped, const geometry_msgs::TwistStamped& twist_stamped)
 {
+    cout << "[angularVelocityCallback] Starting" << endl;
+    double roll = 0, pitch = 0, yaw = 0, altitude = 0;
+    tf::Matrix3x3 orientation(tf::Quaternion(pose_stamped.pose.orientation.x,pose_stamped.pose.orientation.y,pose_stamped.pose.orientation.z,pose_stamped.pose.orientation.w));
+
+    orientation.getRPY(roll, pitch, yaw);
+/*
     float roll, pitch, yaw, altitude, t0, t1, t2, x, y, z, w;
 
     x = pose_stamped.pose.orientation.x;
@@ -140,6 +146,7 @@ void CommandInterface::angularVelocityCallback(const geometry_msgs::PoseStamped&
     if (t2 > 1) t2 = 1;
     if (t2 < -1) t2 = -1;
     pitch = asin(t2);
+    */
 
     //yaw: TwistStamped.Twist.angular
     yaw = twist_stamped.twist.angular.z;
@@ -154,19 +161,20 @@ void CommandInterface::angularVelocityCallback(const geometry_msgs::PoseStamped&
     << " " << static_cast<int>(round(yaw * 100));
 
     this->commandSocket->send_command(rc.str().c_str());
-    cout << "Command: " << rc.str() << endl;
+    cout << "[angularVelocityCallback] Command: " << rc.str() << endl;
 }
 
 void CommandInterface::rcCallback(const droneMsgsROS::dronePitchRollCmd& roll_pitch, const droneMsgsROS::droneDAltitudeCmd& altitude, const droneMsgsROS::droneDYawCmd& yaw)
 {
+    cout << "[rcCallback] Starting" << endl;
     std::ostringstream rc;
     rc << "rc " << static_cast<int>(round(roll_pitch.rollCmd * 100))
-    << " " << static_cast<int>(round(roll_pitch.pitchCmd * 100))
+    << " " << static_cast<int>(round(-roll_pitch.pitchCmd * 100))
     << " " << static_cast<int>(round(altitude.dAltitudeCmd * 100))
     << " " << static_cast<int>(round(yaw.dYawCmd * 100));
 
     this->commandSocket->send_command(rc.str().c_str());
-    cout << "Command: " << rc.str() << endl;
+    cout << "[rcCallback] Command: " << rc.str() << endl;
 }
 
 void CommandInterface::commandEnumCallback(const droneMsgsROS::droneCommand::ConstPtr& msg)
