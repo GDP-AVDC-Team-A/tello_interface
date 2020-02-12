@@ -37,8 +37,8 @@
 using namespace std;
 
 CommandInterface::CommandInterface() :
-    sync (sync_policy_velocity(1)),
-    synch (sync_policy(1))
+    sync (sync_policy_velocity(1))//,
+    //synch (sync_policy(1))
 {
 }
 
@@ -75,11 +75,11 @@ void CommandInterface::ownStart()
     sync.registerCallback(&CommandInterface::angularVelocityCallback, this);
 
     //DEPRECATED
-    roll_pitch_dep_sub.subscribe(n, "command/pitch_roll", 1);
-    altitude_dep_sub.subscribe(n, "command/dAltitude", 1);
-    yaw_dep_sub.subscribe(n, "command/dYaw", 1);
-    synch.connectInput(roll_pitch_dep_sub, altitude_dep_sub, yaw_dep_sub);
-    synch.registerCallback(&CommandInterface::rcCallback, this);
+    // roll_pitch_dep_sub.subscribe(n, "command/pitch_roll", 1);
+    // altitude_dep_sub.subscribe(n, "command/dAltitude", 1);
+    // yaw_dep_sub.subscribe(n, "command/dYaw", 1);
+    // synch.connectInput(roll_pitch_dep_sub, altitude_dep_sub, yaw_dep_sub);
+    // synch.registerCallback(&CommandInterface::rcCallback, this);
 
     command_enum_sub = n.subscribe("command/high_level", 1, &CommandInterface::commandEnumCallback, this);
 
@@ -123,11 +123,11 @@ void CommandInterface::commandCallback(const std_msgs::String &msg)
     command_msg.data = msg.data;
 }
 
-void CommandInterface::angularVelocityCallback(const geometry_msgs::PoseStamped& pose_stamped, const geometry_msgs::TwistStamped& twist_stamped)
+void CommandInterface::angularVelocityCallback(const geometry_msgs::PoseStamped::ConstPtr& pose_stamped, const geometry_msgs::TwistStamped::ConstPtr& twist_stamped)
 {
     cout << "[angularVelocityCallback] Starting" << endl;
     double roll = 0, pitch = 0, yaw = 0, altitude = 0;
-    tf::Matrix3x3 orientation(tf::Quaternion(pose_stamped.pose.orientation.x,pose_stamped.pose.orientation.y,pose_stamped.pose.orientation.z,pose_stamped.pose.orientation.w));
+    tf::Matrix3x3 orientation(tf::Quaternion(pose_stamped->pose.orientation.x,pose_stamped->pose.orientation.y,pose_stamped->pose.orientation.z,pose_stamped->pose.orientation.w));
 
     orientation.getRPY(roll, pitch, yaw);
 /*
@@ -149,9 +149,9 @@ void CommandInterface::angularVelocityCallback(const geometry_msgs::PoseStamped&
     */
 
     //yaw: TwistStamped.Twist.angular
-    yaw = twist_stamped.twist.angular.z;
+    yaw = twist_stamped->twist.angular.z;
     //altitude: TwistStamped.Twist.linear
-    altitude = twist_stamped.twist.linear.z;
+    altitude = twist_stamped->twist.linear.z;
 
 
     std::ostringstream rc;
@@ -164,18 +164,18 @@ void CommandInterface::angularVelocityCallback(const geometry_msgs::PoseStamped&
     cout << "[angularVelocityCallback] Command: " << rc.str() << endl;
 }
 
-void CommandInterface::rcCallback(const droneMsgsROS::dronePitchRollCmd& roll_pitch, const droneMsgsROS::droneDAltitudeCmd& altitude, const droneMsgsROS::droneDYawCmd& yaw)
-{
-    cout << "[rcCallback] Starting" << endl;
-    std::ostringstream rc;
-    rc << "rc " << static_cast<int>(round(roll_pitch.rollCmd * 100))
-    << " " << static_cast<int>(round(-roll_pitch.pitchCmd * 100))
-    << " " << static_cast<int>(round(altitude.dAltitudeCmd * 100))
-    << " " << static_cast<int>(round(yaw.dYawCmd * 100));
+// void CommandInterface::rcCallback(const droneMsgsROS::dronePitchRollCmd& roll_pitch, const droneMsgsROS::droneDAltitudeCmd& altitude, const droneMsgsROS::droneDYawCmd& yaw)
+// {
+//     cout << "[rcCallback] Starting" << endl;
+//     std::ostringstream rc;
+//     rc << "rc " << static_cast<int>(round(roll_pitch.rollCmd * 100))
+//     << " " << static_cast<int>(round(-roll_pitch.pitchCmd * 100))
+//     << " " << static_cast<int>(round(altitude.dAltitudeCmd * 100))
+//     << " " << static_cast<int>(round(yaw.dYawCmd * 100));
 
-    this->commandSocket->send_command(rc.str().c_str());
-    cout << "[rcCallback] Command: " << rc.str() << endl;
-}
+//     this->commandSocket->send_command(rc.str().c_str());
+//     cout << "[rcCallback] Command: " << rc.str() << endl;
+// }
 
 void CommandInterface::commandEnumCallback(const droneMsgsROS::droneCommand::ConstPtr& msg)
 {

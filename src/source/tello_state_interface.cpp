@@ -150,9 +150,9 @@ void StateInterface::get_state()
             float z = (-sin(roll_rad) * dPitch) + (cos(roll_rad)*cos(pitch_rad) * dYaw);
             
             speed_msg.header.stamp = current_timestamp;
-            speed_msg.twist.linear.x = vgx;
-            speed_msg.twist.linear.y = vgy;
-            speed_msg.twist.linear.z = -vgz;
+            speed_msg.twist.linear.x = vgx / 10;
+            speed_msg.twist.linear.y = vgy / 10;
+            speed_msg.twist.linear.z = -vgz / 10;
             speed_msg.twist.angular.x = x;
             speed_msg.twist.angular.y = y;
             speed_msg.twist.angular.z = z;

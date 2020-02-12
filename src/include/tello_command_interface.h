@@ -94,14 +94,14 @@ protected:
     message_filters::Subscriber<geometry_msgs::TwistStamped> altitude_yaw_sub;
     typedef message_filters::sync_policies::ApproximateTime<geometry_msgs::PoseStamped, geometry_msgs::TwistStamped> sync_policy_velocity;
     message_filters::Synchronizer<sync_policy_velocity> sync;
-    void angularVelocityCallback(const geometry_msgs::PoseStamped& pose, const geometry_msgs::TwistStamped& twist);
+    void angularVelocityCallback(const geometry_msgs::PoseStamped::ConstPtr& pose, const geometry_msgs::TwistStamped::ConstPtr& twist);
 
-    message_filters::Subscriber<droneMsgsROS::dronePitchRollCmd> roll_pitch_dep_sub;
-    message_filters::Subscriber<droneMsgsROS::droneDAltitudeCmd> altitude_dep_sub;
-    message_filters::Subscriber<droneMsgsROS::droneDYawCmd> yaw_dep_sub;
-    typedef message_filters::sync_policies::ApproximateTime<droneMsgsROS::dronePitchRollCmd, droneMsgsROS::droneDAltitudeCmd, droneMsgsROS::droneDYawCmd> sync_policy;
-    message_filters::Synchronizer<sync_policy> synch;
-    void rcCallback(const droneMsgsROS::dronePitchRollCmd& roll_pitch, const droneMsgsROS::droneDAltitudeCmd& altitude, const droneMsgsROS::droneDYawCmd& yaw);
+    // message_filters::Subscriber<droneMsgsROS::dronePitchRollCmd> roll_pitch_dep_sub;
+    // message_filters::Subscriber<droneMsgsROS::droneDAltitudeCmd> altitude_dep_sub;
+    // message_filters::Subscriber<droneMsgsROS::droneDYawCmd> yaw_dep_sub;
+    // typedef message_filters::sync_policies::ApproximateTime<droneMsgsROS::dronePitchRollCmd, droneMsgsROS::droneDAltitudeCmd, droneMsgsROS::droneDYawCmd> sync_policy;
+    // message_filters::Synchronizer<sync_policy> synch;
+    // void rcCallback(const droneMsgsROS::dronePitchRollCmd& roll_pitch, const droneMsgsROS::droneDAltitudeCmd& altitude, const droneMsgsROS::droneDYawCmd& yaw);
     
     ros::Subscriber command_enum_sub;
     void commandEnumCallback(const droneMsgsROS::droneCommand::ConstPtr& msg);
