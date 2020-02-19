@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 
-set(PROJECT_NAME tello_interface)
+set(PROJECT_NAME tello_interface_process)
 project(${PROJECT_NAME})
 
 ### Use version 2011 of C++ (c++11). By default ROS uses c++98
@@ -30,49 +30,44 @@ set(DRIVER_TELLO_INCLUDE_DIR
 	)
 
 set(DRIVER_TELLO_HEADER_FILES
-        src/include/socket_tello.h
         src/include/tello_camera_interface.h
         src/include/tello_command_interface.h
         src/include/tello_state_interface.h
     )
 
 set(DRIVER_TELLO_SOURCE_FILES
-        src/source/socket_tello.cpp
-        src/source/socket_tello_camera.cpp
-        src/source/socket_tello_command.cpp
-        src/source/socket_tello_state.cpp
     )
 
 find_package(catkin REQUIRED
-                COMPONENTS roscpp std_msgs geometry_msgs sensor_msgs gazebo_msgs mavros robot_process droneMsgsROS lib_cvgutils tf_conversions cv_bridge)
+                COMPONENTS roscpp std_msgs geometry_msgs sensor_msgs gazebo_msgs mavros robot_process droneMsgsROS lib_cvgutils tf_conversions cv_bridge tello_interface)
 
 
 catkin_package(
 #       INCLUDE_DIRS ${OKTODRIVER_INCLUDE_DIR}
-        CATKIN_DEPENDS roscpp std_msgs geometry_msgs sensor_msgs gazebo_msgs mavros robot_process droneMsgsROS lib_cvgutils tf_conversions
+        CATKIN_DEPENDS roscpp std_msgs geometry_msgs sensor_msgs gazebo_msgs mavros robot_process droneMsgsROS lib_cvgutils tf_conversions tello_interface
   )
 
 
 include_directories(${DRIVER_TELLO_INCLUDE_DIR})
 include_directories(${catkin_INCLUDE_DIRS})
 
-add_library(tello_interface ${DRIVER_TELLO_SOURCE_FILES} ${DRIVER_TELLO_HEADER_FILES})
-add_dependencies(tello_interface ${catkin_EXPORTED_TARGETS})
-target_link_libraries(tello_interface ${catkin_LIBRARIES} avcodec avutil swscale)
+add_library(tello_interface_process ${DRIVER_TELLO_SOURCE_FILES} ${DRIVER_TELLO_HEADER_FILES})
+add_dependencies(tello_interface_process ${catkin_EXPORTED_TARGETS})
+target_link_libraries(tello_interface_process ${catkin_LIBRARIES} avcodec avutil swscale tello_interface)
 
 add_executable(tello_camera_interface  src/source/tello_camera_interface.cpp)
 add_dependencies(tello_camera_interface ${catkin_EXPORTED_TARGETS})
-target_link_libraries(tello_camera_interface tello_interface)
+target_link_libraries(tello_camera_interface tello_interface_process)
 target_link_libraries(tello_camera_interface ${catkin_LIBRARIES})
 
 add_executable(tello_command_interface  src/source/tello_command_interface.cpp)
 add_dependencies(tello_command_interface ${catkin_EXPORTED_TARGETS})
-target_link_libraries(tello_command_interface tello_interface)
+target_link_libraries(tello_command_interface tello_interface_process)
 target_link_libraries(tello_command_interface ${catkin_LIBRARIES})
 
 add_executable(tello_state_interface  src/source/tello_state_interface.cpp)
 add_dependencies(tello_state_interface ${catkin_EXPORTED_TARGETS})
-target_link_libraries(tello_state_interface tello_interface)
+target_link_libraries(tello_state_interface tello_interface_process)
 target_link_libraries(tello_state_interface ${catkin_LIBRARIES})
 
-set_target_properties(tello_interface PROPERTIES LINKER_LANGUAGE CXX)
+set_target_properties(tello_interface_process PROPERTIES LINKER_LANGUAGE CXX)

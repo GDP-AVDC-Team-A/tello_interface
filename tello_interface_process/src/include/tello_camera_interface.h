@@ -1,5 +1,5 @@
 /*!*******************************************************************************
- *  \brief      This is the state interface package for Tello Interface.
+ *  \brief      This is the camera interface package for Tello Interface.
  *  \authors    Rodrigo Pueblas Núñez
  *              Hriday Bavle
  *              Alberto Rodelgo Perales
@@ -37,25 +37,16 @@
 //// ROS  ///////
 #include "ros/ros.h"
 #include <robot_process.h>
+#include "cv_bridge/cv_bridge.h"
 
 #include "socket_tello.h"
 
-#include <tf/transform_broadcaster.h>
-
-#include <geometry_msgs/Vector3Stamped.h>
-#include <geometry_msgs/TwistStamped.h>
-#include <sensor_msgs/BatteryState.h>
-#include <geometry_msgs/AccelStamped.h>
-#include <sensor_msgs/Imu.h>
-#include <sensor_msgs/Temperature.h>
-#include <geometry_msgs/PointStamped.h>
-
-class StateInterface : public RobotProcess
+class CameraInterface : public RobotProcess
 {
 //Constructors and destructors
 public:
-    StateInterface();
-    ~StateInterface();
+    CameraInterface();
+    ~CameraInterface();
 
 protected:
     bool resetValues();
@@ -64,32 +55,17 @@ private: /*RobotProcess*/
     void ownStart();
     void ownStop();
     void ownRun();
-    void get_state();
-    std::thread* state_thread;
+    void get_camera();
+    std::thread* camera_thread;
 
     std::string drone_namespace;   
     std::string tello_drone_model;
     int tello_drone_id;
     int drone_id;
-    //TelloSocketServer* stateSocket;
-    StateSocket* stateSocket;
-    //Publisher
-protected:
-    ros::Publisher rotation_pub;
-    ros::Publisher speed_pub;
-    ros::Publisher accel_pub;
-    ros::Publisher imu_pub;
-    ros::Publisher battery_pub;
-    ros::Publisher temperature_pub;
-    ros::Publisher sea_level_pub;
-    ros::Publisher altitude_pub;
 
-    geometry_msgs::Vector3Stamped rotation_msg;
-    geometry_msgs::TwistStamped speed_msg;
-    geometry_msgs::AccelStamped accel_msg;
-    sensor_msgs::Imu imu_msg;
-    sensor_msgs::BatteryState battery_msg;
-    sensor_msgs::Temperature temperature_msg;
-    geometry_msgs::PointStamped sea_level_msg;
-    geometry_msgs::PointStamped altitude_msg;
+    VideoSocket* cameraSocket;
+
+protected:
+    ros::Publisher camera_pub;
+    cv_bridge::CvImage image;
 };

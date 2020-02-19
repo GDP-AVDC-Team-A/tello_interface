@@ -166,7 +166,7 @@ void StateInterface::get_state()
             accel_msg.accel.linear.x = agx / -100; //pos delante
             accel_msg.accel.linear.y = agy / 100; //pos izq
             accel_msg.accel.linear.z = agz / -100;
-            //accel_pub.publish(accel_msg);
+            accel_pub.publish(accel_msg);
 
             // BATTERY
             float battery = state_map.find("bat")->second;

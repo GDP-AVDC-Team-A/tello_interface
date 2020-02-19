@@ -11,8 +11,8 @@ extern "C"
 
 using namespace std;
 
-VideoSocket::VideoSocket(unsigned short video_port, ros::Publisher pub) :
-  TelloSocket(video_port), camera_pub(pub)
+VideoSocket::VideoSocket(unsigned short video_port) :
+  TelloSocket(video_port)
 {
   packet_buffer = std::vector<unsigned char>(2048);
   buffer_list = std::vector<unsigned char>(65536);
@@ -56,6 +56,16 @@ VideoSocket::~VideoSocket()
   delete pkt;
   sws_freeContext(rgb_context);
   av_frame_free(&rgb_frame);
+}
+
+void VideoSocket::setImage(cv_bridge::CvImage img)
+{
+  this->image = img;
+}
+
+
+cv_bridge::CvImage VideoSocket::getImage(){
+  return this->image;
 }
 
 void VideoSocket::process_packet(size_t size)
@@ -119,8 +129,8 @@ void VideoSocket::decode_frames()
         ros::Time current_timestamp = ros::Time::now();
         header.stamp = current_timestamp;
         cv_bridge::CvImage image{header, sensor_msgs::image_encodings::BGR8, mat};
-        
-        camera_pub.publish(image.toImageMsg());
+
+        this->setImage(image);
       }
       next += consumed;
     }

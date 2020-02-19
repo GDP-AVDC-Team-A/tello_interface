@@ -5,23 +5,9 @@
 #include <thread>
 #include <mutex>
 #include "cv_bridge/cv_bridge.h"
-#include "ros/ros.h"
 
 #include <cstdlib>
 #include <stdexcept>
-
-
-#ifndef PIX_FMT_RGB24
-#define PIX_FMT_RGB24 AV_PIX_FMT_RGB24
-#endif
-
-#ifndef CODEC_CAP_TRUNCATED
-#define CODEC_CAP_TRUNCATED AV_CODEC_CAP_TRUNCATED
-#endif
-
-#ifndef CODEC_FLAG_TRUNCATED
-#define CODEC_FLAG_TRUNCATED AV_CODEC_FLAG_TRUNCATED
-#endif
 
 using boost::asio::ip::udp;
 
@@ -94,8 +80,11 @@ class VideoSocket : public TelloSocket
   AVFrame *rgb_frame;
 
 public:
-  VideoSocket(unsigned short video_port, ros::Publisher pub);
+  VideoSocket(unsigned short video_port);
   ~VideoSocket();
+
+  void setImage(cv_bridge::CvImage img);
+  cv_bridge::CvImage getImage();
 
 private:
   void process_packet(size_t size) override;
@@ -105,7 +94,7 @@ private:
   int buffer_list_size = 0;
   size_t next_buffer = 0;
 
-  ros::Publisher camera_pub;
+  cv_bridge::CvImage image;
 };
 
 #endif

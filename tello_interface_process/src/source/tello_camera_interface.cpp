@@ -32,38 +32,76 @@
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  ********************************************************************************/ 
 
-#include <iostream>
+#include "tello_camera_interface.h"
 
-//// ROS  ///////
-#include "ros/ros.h"
-#include <robot_process.h>
+using namespace std;
 
-#include "socket_tello.h"
+CameraInterface::CameraInterface(){
+}   
 
-class CameraInterface : public RobotProcess
+CameraInterface::~CameraInterface(){
+}
+
+void CameraInterface::ownSetUp() {
+    ros::param::get("~tello_drone_id", tello_drone_id);
+    ros::param::get("~tello_drone_model", tello_drone_model);
+}
+
+void CameraInterface::ownStart(){
+    //Publisher
+    ros::NodeHandle n;
+    camera_pub = n.advertise<sensor_msgs::Image>("sensor_measurement/camera", 1, true);
+
+    this->cameraSocket = new VideoSocket(TELLO_CAMERA_PORT);
+}
+
+//Stop
+void CameraInterface::ownStop()
 {
-//Constructors and destructors
-public:
-    CameraInterface();
-    ~CameraInterface();
+    camera_pub.shutdown();
+}
 
-protected:
-    bool resetValues();
-private: /*RobotProcess*/
-    void ownSetUp();
-    void ownStart();
-    void ownStop();
-    void ownRun();
-    void get_camera();
-    std::thread* camera_thread;
+//Reset
+bool CameraInterface::resetValues()
+{
+    return true;
+}
 
-    std::string drone_namespace;   
-    std::string tello_drone_model;
-    int tello_drone_id;
-    int drone_id;
+//Run
+void CameraInterface::ownRun()
+{
+    image = this->cameraSocket->getImage();
+    
+    cout << "ownRun() publishing image" << endl;
+    camera_pub.publish(image.toImageMsg());
 
-    VideoSocket* cameraSocket;
+}
 
-protected:
-    ros::Publisher camera_pub;
-};
+int main(int argc,char **argv)
+{
+    //Ros Init
+    ros::init(argc, argv, "CameraInterface");
+
+    cout<<"[ROSNODE] Starting CameraInterface"<<endl;
+
+    //Vars
+    CameraInterface camera_interface;
+    camera_interface.setUp();
+    camera_interface.start();
+    try
+    {
+        //Read messages
+        while (true)
+        {   
+            // sleep 10ms
+            usleep(10000);
+            ros::spinOnce();
+            camera_interface.run();
+        }
+        return 1;
+    }
+    catch (std::exception &ex)
+    {
+        std::cout<<"[ROSNODE] Exception :"<<ex.what()<<std::endl;
+    }
+}

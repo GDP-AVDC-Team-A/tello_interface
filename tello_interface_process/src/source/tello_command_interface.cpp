@@ -65,8 +65,8 @@ void CommandInterface::ownStart()
     this->commandSocket->send_command("streamon");
 
     ros::NodeHandle n;
-    command_pub = n.advertise<std_msgs::String>("command", 1, true);
-    command_sub = n.subscribe("command", 1, &CommandInterface::commandCallback, this);
+    command_pub = n.advertise<std_msgs::String>("tello_command", 1, true);
+    command_sub = n.subscribe("tello_command", 1, &CommandInterface::commandCallback, this);
 
     // STANDARD
     roll_pitch_sub.subscribe(n, "actuator_command/roll_pitch", 1);

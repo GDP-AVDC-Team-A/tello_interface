@@ -1,5 +1,5 @@
 /*!*******************************************************************************
- *  \brief      This is the command interface package for Tello Interface.
+ *  \brief      This is the state interface package for Tello Interface.
  *  \authors    Rodrigo Pueblas Núñez
  *              Hriday Bavle
  *              Alberto Rodelgo Perales
@@ -36,75 +36,60 @@
 
 //// ROS  ///////
 #include "ros/ros.h"
-#include "cvg_string_conversions.h"
 #include <robot_process.h>
 
-#include "socket_tello.h"
+#include <socket_tello.h>
 
 #include <tf/transform_broadcaster.h>
 
-#include <std_msgs/String.h>
-#include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/Vector3Stamped.h>
 #include <geometry_msgs/TwistStamped.h>
-#include <message_filters/subscriber.h>
-#include <message_filters/synchronizer.h>
-#include <message_filters/sync_policies/approximate_time.h>
+#include <sensor_msgs/BatteryState.h>
+#include <geometry_msgs/AccelStamped.h>
+#include <sensor_msgs/Imu.h>
+#include <sensor_msgs/Temperature.h>
+#include <geometry_msgs/PointStamped.h>
 
-#include "droneMsgsROS/dronePitchRollCmd.h"
-#include "droneMsgsROS/droneDYawCmd.h"
-#include "droneMsgsROS/droneDAltitudeCmd.h"
-#include "droneMsgsROS/droneCommand.h"
-
-#define ALIVE_INTERVAL 1 //alive interval in seconds
-
-class TelloSocketClient;
-
-class CommandInterface : public RobotProcess
+class StateInterface : public RobotProcess
 {
 //Constructors and destructors
 public:
-    CommandInterface();
-    ~CommandInterface();
+    StateInterface();
+    ~StateInterface();
 
 protected:
-    bool resetValues();    
+    bool resetValues();
 private: /*RobotProcess*/
     void ownSetUp();
     void ownStart();
     void ownStop();
     void ownRun();
-
-    void stay_alive();
-    bool alive;
-    std::thread* alive_thread;
+    void get_state();
+    std::thread* state_thread;
 
     std::string drone_namespace;   
     std::string tello_drone_model;
     int tello_drone_id;
     int drone_id;
-    CommandSocket* commandSocket;
-
+    //TelloSocketServer* stateSocket;
+    StateSocket* stateSocket;
+    //Publisher
 protected:
-    ros::Publisher command_pub;
-    ros::Subscriber command_sub;
-    void commandCallback(const std_msgs::String &msg);
+    ros::Publisher rotation_pub;
+    ros::Publisher speed_pub;
+    ros::Publisher accel_pub;
+    ros::Publisher imu_pub;
+    ros::Publisher battery_pub;
+    ros::Publisher temperature_pub;
+    ros::Publisher sea_level_pub;
+    ros::Publisher altitude_pub;
 
-    // RC COMMAND
-    message_filters::Subscriber<geometry_msgs::PoseStamped> roll_pitch_sub;
-    message_filters::Subscriber<geometry_msgs::TwistStamped> altitude_yaw_sub;
-    typedef message_filters::sync_policies::ApproximateTime<geometry_msgs::PoseStamped, geometry_msgs::TwistStamped> sync_policy_velocity;
-    message_filters::Synchronizer<sync_policy_velocity> sync;
-    void angularVelocityCallback(const geometry_msgs::PoseStamped::ConstPtr& pose, const geometry_msgs::TwistStamped::ConstPtr& twist);
-
-    // message_filters::Subscriber<droneMsgsROS::dronePitchRollCmd> roll_pitch_dep_sub;
-    // message_filters::Subscriber<droneMsgsROS::droneDAltitudeCmd> altitude_dep_sub;
-    // message_filters::Subscriber<droneMsgsROS::droneDYawCmd> yaw_dep_sub;
-    // typedef message_filters::sync_policies::ApproximateTime<droneMsgsROS::dronePitchRollCmd, droneMsgsROS::droneDAltitudeCmd, droneMsgsROS::droneDYawCmd> sync_policy;
-    // message_filters::Synchronizer<sync_policy> synch;
-    // void rcCallback(const droneMsgsROS::dronePitchRollCmd& roll_pitch, const droneMsgsROS::droneDAltitudeCmd& altitude, const droneMsgsROS::droneDYawCmd& yaw);
-    
-    ros::Subscriber command_enum_sub;
-    void commandEnumCallback(const droneMsgsROS::droneCommand::ConstPtr& msg);
-
-    std_msgs::String command_msg;
+    geometry_msgs::Vector3Stamped rotation_msg;
+    geometry_msgs::TwistStamped speed_msg;
+    geometry_msgs::AccelStamped accel_msg;
+    sensor_msgs::Imu imu_msg;
+    sensor_msgs::BatteryState battery_msg;
+    sensor_msgs::Temperature temperature_msg;
+    geometry_msgs::PointStamped sea_level_msg;
+    geometry_msgs::PointStamped altitude_msg;
 };
