@@ -72,7 +72,6 @@ void CameraInterface::ownRun()
 {
     image = this->cameraSocket->getImage();
     
-    cout << "ownRun() publishing image" << endl;
     camera_pub.publish(image.toImageMsg());
 
 }
