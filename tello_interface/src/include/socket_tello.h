@@ -60,7 +60,7 @@ class CommandSocket : public TelloSocket
 {
 public:
   CommandSocket(std::string drone_ip, unsigned short drone_port, unsigned short command_port);
-  void send_command(std::string command);
+  std::string send_command(std::string command);
 
 private:
   void process_packet(size_t size) override;

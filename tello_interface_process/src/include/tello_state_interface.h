@@ -1,9 +1,7 @@
 /*!*******************************************************************************
  *  \brief      This is the state interface package for Tello Interface.
- *  \authors    Rodrigo Pueblas Núñez
- *              Hriday Bavle
- *              Alberto Rodelgo Perales
- *  \copyright  Copyright (c) 2019 Universidad Politecnica de Madrid
+ *  \authors    Alberto Rodelgo Perales
+ *  \copyright  Copyright (c) 2020 Universidad Politecnica de Madrid
  *              All rights reserved
  *
  *
@@ -49,6 +47,8 @@
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/Temperature.h>
 #include <geometry_msgs/PointStamped.h>
+#include "aerostack_msgs/FlightActionCommand.h"
+#include "aerostack_msgs/FlightState.h"
 
 class StateInterface : public RobotProcess
 {
@@ -75,15 +75,21 @@ private: /*RobotProcess*/
     StateSocket* stateSocket;
     //Publisher
 protected:
-    ros::Publisher rotation_pub;
     ros::Publisher speed_pub;
-    ros::Publisher accel_pub;
     ros::Publisher imu_pub;
     ros::Publisher battery_pub;
     ros::Publisher temperature_pub;
     ros::Publisher sea_level_pub;
     ros::Publisher altitude_pub;
+    ros::Publisher flight_state_pub;
 
+    ros::Subscriber flight_action_sub;
+    ros::Time time_status;
+    aerostack_msgs::FlightActionCommand flight_action_msg;
+    void flightActionCallback(const aerostack_msgs::FlightActionCommand::ConstPtr& msg);
+    void sendFlightStatus(geometry_msgs::TwistStamped sensor_speed_msg, geometry_msgs::PointStamped sensor_altitude_msg);
+
+    aerostack_msgs::FlightState flight_state_msg;
     geometry_msgs::Vector3Stamped rotation_msg;
     geometry_msgs::TwistStamped speed_msg;
     geometry_msgs::AccelStamped accel_msg;

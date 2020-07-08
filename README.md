@@ -2,33 +2,29 @@
 
 The ROS node "tello interface" implements a ROS bridge for the DJI Tello drone. 
 
-
 # Subscribed topics
 
-- **tello_command** ([std_msgs/String](http://docs.ros.org/api/std_msgs/html/msg/String.html))  
-String representation of a command sent directly to the drone. This command is used constantly by the interface to mantain an alive connection with the drone.
+- **actuator_command/flight_action** ([aerostack_msgs/FlightActionCommand](https://bitbucket.org/visionaerialrobotics/aerostack_msgs/src/7c07e4317e20a1142226d513336a06a2ff585629/msg/FlightActionCommand.msg))      
+Flight command specifying a qualitative action of the robot (take off, hover or land). This command can be interpreted by some aerial platforms (e.g. Parrot drones) but it is ignored by others.
 
-- **actuator_command/roll_pitch** ([geometry_msgs/PoseStamped](http://docs.ros.org/lunar/api/geometry_msgs/html/msg/PoseStamped.html))  
-Standard Roll and Pitch command to control the drone. Note: this topic is synchronized with <actuator_command/altitude_rate_yaw_rate>, and in order to perform any move, both commands must be sent.
+- **motion_reference/pose** ([geometry_msgs/PoseStamped](http://docs.ros.org/api/geometry_msgs/html/msg/PoseStamped.html))  
+Pose reference for the controller.
 
-- **actuator_command/altitude_rate_yaw_rate** ([geometry_msgs/TwistStamped](http://docs.ros.org/api/geometry_msgs/html/msg/TwistStamped.html))      
-Standard Altitude Rate and Yaw Rate command to control the drone. Note: this topic is synchronized with <actuator_command/roll_pitch>, and in order to perform any move, both commands must be sent.
+- **motion_reference/speed** ([geometry_msgs/TwistStamped](http://docs.ros.org/lunar/api/geometry_msgs/html/msg/TwistStamped.html))  
+Speed reference for the controller.
+
+- **actuator_command/roll_pitch_yaw_rate_thrust** ([mav_msgs/RollPitchYawrateThrust](http://docs.ros.org/api/mav_msgs/html/msg/RollPitchYawrateThrust.html))           
+Actuator command for the multirotor specifying roll (rad), pitch (rad), yaw rate (rad/s) and thrust (N: Newtons).
 
 # Published topics
 
-- **sensor_measurement/rotation_angles** ([geometry_msgs/Vector3Stamped](http://docs.ros.org/api/geometry_msgs/html/msg/Vector3Stamped.html))           
-Roll, pitch and yaw representation of the orientation of the drone. Reference axis is defined the first time that the connection is established.
-
-- **sensor_measurement/speed** ([geometry_msgs/TwistStamped](http://docs.ros.org/api/geometry_msgs/html/msg/TwistStamped.html))           
+- **sensor_measurement/linear_speed** ([geometry_msgs/TwistStamped](http://docs.ros.org/api/geometry_msgs/html/msg/TwistStamped.html))           
 Linear and angular speeds along roll, pitch and yaw axes. Units are m/s and rad/s respectively.
-
-- **sensor_measurement/accel** ([geometry_msgs/AccelStamped](http://docs.ros.org/api/geometry_msgs/html/msg/AccelStamped.html))           
-Acceleration along roll, pitch and yaw axes. Units are m/s².
 
 - **sensor_measurement/imu** ([sensor_msgs/Imu](http://docs.ros.org/api/sensor_msgs/html/msg/Imu.html))           
 IMU measurement.
 
-- **sensor_measurement/imu** ([sensor_msgs/BatteryState](http://docs.ros.org/api/sensor_msgs/html/msg/BatteryState.html))           
+- **sensor_measurement/battery_state** ([sensor_msgs/BatteryState](http://docs.ros.org/api/sensor_msgs/html/msg/BatteryState.html))           
 Battery measurement.
 
 - **sensor_measurement/temperature** ([sensor_msgs/Temperature](http://docs.ros.org/api/sensor_msgs/html/msg/Temperature.html))           

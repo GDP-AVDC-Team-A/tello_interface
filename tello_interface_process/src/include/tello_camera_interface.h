@@ -3,7 +3,7 @@
  *  \authors    Rodrigo Pueblas Núñez
  *              Hriday Bavle
  *              Alberto Rodelgo Perales
- *  \copyright  Copyright (c) 2019 Universidad Politecnica de Madrid
+ *  \copyright  Copyright (c) 2020 Universidad Politecnica de Madrid
  *              All rights reserved
  *
  *

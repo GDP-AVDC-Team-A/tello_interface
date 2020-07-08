@@ -3,7 +3,7 @@
  *  \authors    Rodrigo Pueblas Núñez
  *              Hriday Bavle
  *              Alberto Rodelgo Perales
- *  \copyright  Copyright (c) 2019 Universidad Politecnica de Madrid
+ *  \copyright  Copyright (c) 2020 Universidad Politecnica de Madrid
  *              All rights reserved
  *
  *
@@ -43,8 +43,6 @@ CameraInterface::~CameraInterface(){
 }
 
 void CameraInterface::ownSetUp() {
-    ros::param::get("~tello_drone_id", tello_drone_id);
-    ros::param::get("~tello_drone_model", tello_drone_model);
 }
 
 void CameraInterface::ownStart(){

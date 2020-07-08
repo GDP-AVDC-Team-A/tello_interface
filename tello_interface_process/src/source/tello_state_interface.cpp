@@ -1,9 +1,7 @@
 /*!*******************************************************************************
  *  \brief      This is the state interface package for Tello Interface.
- *  \authors    Rodrigo Pueblas Núñez
- *              Hriday Bavle
- *              Alberto Rodelgo Perales
- *  \copyright  Copyright (c) 2019 Universidad Politecnica de Madrid
+ *  \authors    Alberto Rodelgo Perales
+ *  \copyright  Copyright (c) 2020 Universidad Politecnica de Madrid
  *              All rights reserved
  *
  *
@@ -44,29 +42,23 @@ StateInterface::~StateInterface(){
 
 void StateInterface::ownSetUp() {
     this->stateSocket = new StateSocket(TELLO_STATE_PORT);
-
-    ros::param::get("~tello_drone_id", tello_drone_id);
-    ros::param::get("~tello_drone_model", tello_drone_model);
 }
 
 void StateInterface::ownStart(){
     //Publisher
     ros::NodeHandle n;
-    rotation_pub = n.advertise<geometry_msgs::Vector3Stamped>("sensor_measurement/rotation_angles", 1, true);
 
-    speed_pub = n.advertise<geometry_msgs::TwistStamped>("sensor_measurement/speed", 1, true);
+    flight_action_sub = n.subscribe("actuator_command/flight_action", 1, &StateInterface::flightActionCallback, this);
 
-    accel_pub = n.advertise<geometry_msgs::AccelStamped>("sensor_measurement/accel", 1, true);
-
+    speed_pub = n.advertise<geometry_msgs::TwistStamped>("sensor_measurement/linear_speed", 1, true);
     imu_pub = n.advertise<sensor_msgs::Imu>("sensor_measurement/imu", 1, true);
-
     battery_pub = n.advertise<sensor_msgs::BatteryState>("sensor_measurement/battery_state", 1, true);
-
     temperature_pub = n.advertise<sensor_msgs::Temperature>("sensor_measurement/temperature", 1, true);
-
     sea_level_pub = n.advertise<geometry_msgs::PointStamped>("sensor_measurement/sea_level", 1, true);
     altitude_pub = n.advertise<geometry_msgs::PointStamped>("sensor_measurement/altitude", 1, true);
+    flight_state_pub = n.advertise<aerostack_msgs::FlightState>("self_localization/flight_state", 1, true);
 
+    flight_action_msg.action = aerostack_msgs::FlightActionCommand::UNKNOWN;
     this->state_thread = new std::thread(&StateInterface::get_state, this);
 }
 
@@ -108,11 +100,6 @@ void StateInterface::get_state()
             float pitch = state_map.find("pitch")->second;
             float roll = state_map.find("roll")->second;
             float yaw = state_map.find("yaw")->second;
-            rotation_msg.header.stamp = current_timestamp;
-            rotation_msg.vector.x = pitch;
-            rotation_msg.vector.y = roll;
-            rotation_msg.vector.z = yaw;
-            rotation_pub.publish(rotation_msg);
 
             // VELOCITY
             float vgx = state_map.find("vgx")->second; 
@@ -122,7 +109,7 @@ void StateInterface::get_state()
             // degrees to radians
             float roll_rad = roll * M_PI / 180.0f;
             float pitch_rad = -pitch * M_PI / 180.0f;
-            float yaw_rad = -yaw * M_PI / 180.0f;
+            float yaw_rad = yaw * M_PI / 180.0f;
 
             //current_time_ = (double) ros::Time::now().sec + ((double) ros::Time::now().nsec / (double) 1E9);
             double diffTime = (current_timestamp - prev_timestamp).nsec / 1E9;
@@ -151,22 +138,18 @@ void StateInterface::get_state()
             
             speed_msg.header.stamp = current_timestamp;
             speed_msg.twist.linear.x = vgx / 10;
-            speed_msg.twist.linear.y = vgy / 10;
+            speed_msg.twist.linear.y = -vgy / 10;
             speed_msg.twist.linear.z = -vgz / 10;
             speed_msg.twist.angular.x = x;
             speed_msg.twist.angular.y = y;
             speed_msg.twist.angular.z = z;
             speed_pub.publish(speed_msg);
 
+
             // ACCELERATION
             float agx = state_map.find("agx")->second;
             float agy = state_map.find("agy")->second;
             float agz = state_map.find("agz")->second;
-            // to m^2/s
-            accel_msg.accel.linear.x = agx / -100; //pos delante
-            accel_msg.accel.linear.y = agy / 100; //pos izq
-            accel_msg.accel.linear.z = agz / -100;
-            accel_pub.publish(accel_msg);
 
             // BATTERY
             float battery = state_map.find("bat")->second;
@@ -183,8 +166,8 @@ void StateInterface::get_state()
             imu_msg.angular_velocity.y = y;
             imu_msg.angular_velocity.z = z;
             // to m^2/s
-            imu_msg.linear_acceleration.x = agx / -100;
-            imu_msg.linear_acceleration.y = agy / 100;
+            imu_msg.linear_acceleration.x = agx / 100;
+            imu_msg.linear_acceleration.y = agy / -100;
             imu_msg.linear_acceleration.z = agz / -100;
 
             tf::Quaternion quaternion = tf::createQuaternionFromRPY(roll_rad, pitch_rad, yaw_rad);
@@ -213,23 +196,103 @@ void StateInterface::get_state()
             sea_level_pub.publish(sea_level_msg);
 
             // ALTITUDE
-            float altitude = state_map.find("h")->second;
+            double altitude = state_map.find("h")->second;
             altitude_msg.header.stamp = current_timestamp;
             // to meters
-            altitude_msg.point.z = altitude / 100;
+            altitude_msg.point.z = -altitude / 100;
             altitude_pub.publish(altitude_msg);
 
             prev_timestamp = current_timestamp;
+
+            sendFlightStatus(speed_msg,altitude_msg);
         }
     }
+}
+
+// Send flight state based on flight action and sensor measurements
+void StateInterface::sendFlightStatus(geometry_msgs::TwistStamped sensor_speed_msg, geometry_msgs::PointStamped sensor_altitude_msg){
+    switch(flight_action_msg.action){
+        case aerostack_msgs::FlightActionCommand::TAKE_OFF:
+            if (flight_state_msg.state == aerostack_msgs::FlightState::LANDED || flight_state_msg.state == aerostack_msgs::FlightState::UNKNOWN){
+                flight_state_msg.state = aerostack_msgs::FlightState::TAKING_OFF;
+                time_status = ros::Time::now();
+            }else{
+                if (flight_state_msg.state == aerostack_msgs::FlightState::TAKING_OFF){
+                    ros::Duration diff = ros::Time::now() - time_status;
+                    if (std::abs(sensor_speed_msg.twist.linear.z) < 0.05 && std::abs(sensor_altitude_msg.point.z) > 0.4 && diff.toSec() >= 5){
+                        flight_state_msg.state = aerostack_msgs::FlightState::FLYING;
+                    }
+                }
+            }
+        break;
+        case aerostack_msgs::FlightActionCommand::HOVER:
+        {
+            if(std::abs(sensor_altitude_msg.point.z) > 0.1 && std::abs(sensor_speed_msg.twist.linear.x) < 0.05 && std::abs(sensor_speed_msg.twist.linear.y) < 0.05 && std::abs(sensor_speed_msg.twist.linear.z) < 0.05 &&
+            std::abs(sensor_speed_msg.twist.angular.x) < 0.05 && std::abs(sensor_speed_msg.twist.angular.y) < 0.05 && std::abs(sensor_speed_msg.twist.angular.z) < 0.05){
+                flight_state_msg.state = aerostack_msgs::FlightState::HOVERING;
+            }
+        }
+        break;
+        case aerostack_msgs::FlightActionCommand::LAND:
+        {
+            if (flight_state_msg.state == aerostack_msgs::FlightState::HOVERING || flight_state_msg.state == aerostack_msgs::FlightState::FLYING){
+                if (sensor_speed_msg.twist.linear.z < 0){
+                    flight_state_msg.state = aerostack_msgs::FlightState::LANDING;
+                }
+            }else{
+                if (flight_state_msg.state == aerostack_msgs::FlightState::LANDING){
+                    if (std::abs(sensor_altitude_msg.point.z) < 0.1 && std::abs(sensor_speed_msg.twist.linear.z < 0.05)){
+                        flight_state_msg.state = aerostack_msgs::FlightState::LANDED;
+                    }
+                }
+            }
+        }
+        break;
+        case aerostack_msgs::FlightActionCommand::MOVE:
+        {
+            //std::cout << "Imprimo datos: " << sensor_speed_msg << std::endl;
+            if(std::abs(sensor_altitude_msg.point.z) > 0.1 && (std::abs(sensor_speed_msg.twist.linear.x) > 0.05 || std::abs(sensor_speed_msg.twist.linear.y) > 0.05 || std::abs(sensor_speed_msg.twist.linear.z) > 0.05 ||
+            std::abs(sensor_speed_msg.twist.angular.x) > 0.05 || std::abs(sensor_speed_msg.twist.angular.y) > 0.05 || std::abs(sensor_speed_msg.twist.angular.z) > 0.05)){
+                flight_state_msg.state = aerostack_msgs::FlightState::FLYING;
+            }
+            if(std::abs(sensor_altitude_msg.point.z) > 0.1 && std::abs(sensor_speed_msg.twist.linear.x) < 0.05 && std::abs(sensor_speed_msg.twist.linear.y) < 0.05 && std::abs(sensor_speed_msg.twist.linear.z) < 0.05 &&
+            std::abs(sensor_speed_msg.twist.angular.x) < 0.05 && std::abs(sensor_speed_msg.twist.angular.y) < 0.05 && std::abs(sensor_speed_msg.twist.angular.z) < 0.05){
+                flight_state_msg.state = aerostack_msgs::FlightState::HOVERING;
+            }
+        }
+        break;
+        case aerostack_msgs::FlightActionCommand::UNKNOWN:
+        default:
+        {
+            if(std::abs(sensor_altitude_msg.point.z) < 0.1 && std::abs(sensor_speed_msg.twist.linear.x) < 0.05 && std::abs(sensor_speed_msg.twist.linear.y) < 0.05 && std::abs(sensor_speed_msg.twist.linear.z) < 0.05 &&
+            std::abs(sensor_speed_msg.twist.angular.x) < 0.05 && std::abs(sensor_speed_msg.twist.angular.y) < 0.05 && std::abs(sensor_speed_msg.twist.angular.z) < 0.05){
+                flight_state_msg.state = aerostack_msgs::FlightState::LANDED;
+            }
+            if(std::abs(sensor_altitude_msg.point.z) > 0.1 && (std::abs(sensor_speed_msg.twist.linear.x) > 0.05 || std::abs(sensor_speed_msg.twist.linear.y) > 0.05 || std::abs(sensor_speed_msg.twist.linear.z) > 0.05 ||
+            std::abs(sensor_speed_msg.twist.angular.x) > 0.05 || std::abs(sensor_speed_msg.twist.angular.y) > 0.05 || std::abs(sensor_speed_msg.twist.angular.z) > 0.05)){
+                flight_state_msg.state = aerostack_msgs::FlightState::FLYING;
+            }
+            if(std::abs(sensor_altitude_msg.point.z) > 0.1 && std::abs(sensor_speed_msg.twist.linear.x) < 0.05 && std::abs(sensor_speed_msg.twist.linear.y) < 0.05 && std::abs(sensor_speed_msg.twist.linear.z) < 0.05 &&
+            std::abs(sensor_speed_msg.twist.angular.x) < 0.05 && std::abs(sensor_speed_msg.twist.angular.y) < 0.05 && std::abs(sensor_speed_msg.twist.angular.z) < 0.05){
+                flight_state_msg.state = aerostack_msgs::FlightState::HOVERING;
+            }
+        }
+        break;
+    }
+    flight_state_pub.publish(flight_state_msg);
+}
+
+void StateInterface::flightActionCallback(const aerostack_msgs::FlightActionCommand::ConstPtr& msg)
+{
+    flight_action_msg = *msg;
 }
 
 //Stop
 void StateInterface::ownStop()
 {
-    rotation_pub.shutdown();
+    flight_state_pub.shutdown();
+    flight_action_sub.shutdown();
     speed_pub.shutdown();
-    accel_pub.shutdown();
     battery_pub.shutdown();
     temperature_pub.shutdown();
     imu_pub.shutdown();

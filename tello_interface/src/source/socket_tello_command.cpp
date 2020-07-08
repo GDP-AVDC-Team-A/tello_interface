@@ -10,13 +10,20 @@ using namespace std;
     packet_buffer = std::vector<unsigned char>(1024);
   }
 
-  void CommandSocket::send_command(std::string command)
+  std::string CommandSocket::send_command(std::string command)
   {
     socket.send_to(boost::asio::buffer(command), endpoint);
+
+    if (command.find("rc") != string::npos){ //rc command doesn't send any response
+      return "ok";
+    }
+
+    size_t size = socket.receive(boost::asio::buffer(packet_buffer));
+    std::string raw(packet_buffer.begin(), packet_buffer.begin() + size);
+    return raw;
   }
-  
+
   void CommandSocket::process_packet(size_t size)
   {
     return;
   }
-

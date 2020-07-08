@@ -1,9 +1,7 @@
 /*!*******************************************************************************
  *  \brief      This is the command interface package for Tello Interface.
- *  \authors    Rodrigo Pueblas Núñez
- *              Hriday Bavle
- *              Alberto Rodelgo Perales
- *  \copyright  Copyright (c) 2019 Universidad Politecnica de Madrid
+ *  \authors    Alberto Rodelgo Perales
+ *  \copyright  Copyright (c) 2020 Universidad Politecnica de Madrid
  *              All rights reserved
  *
  *
@@ -38,6 +36,7 @@
 #include "ros/ros.h"
 #include "cvg_string_conversions.h"
 #include <robot_process.h>
+#include "math.h"
 
 #include "socket_tello.h"
 
@@ -49,9 +48,12 @@
 #include <message_filters/subscriber.h>
 #include <message_filters/synchronizer.h>
 #include <message_filters/sync_policies/approximate_time.h>
-#include "droneMsgsROS/droneCommand.h"
+#include "aerostack_msgs/FlightActionCommand.h"
+#include "mav_msgs/RollPitchYawrateThrust.h"
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2/LinearMath/Matrix3x3.h>
 
-#define ALIVE_INTERVAL 1 //alive interval in seconds
+#include <std_msgs/String.h>
 
 class TelloSocketClient;
 
@@ -70,37 +72,23 @@ private: /*RobotProcess*/
     void ownStop();
     void ownRun();
 
-    void stay_alive();
-    bool alive;
-    std::thread* alive_thread;
-
-    std::string drone_namespace;   
-    std::string tello_drone_model;
-    int tello_drone_id;
-    int drone_id;
     CommandSocket* commandSocket;
-
-protected:
-    ros::Publisher command_pub;
-    ros::Subscriber command_sub;
-    void commandCallback(const std_msgs::String &msg);
-
-    // RC COMMAND
-    message_filters::Subscriber<geometry_msgs::PoseStamped> roll_pitch_sub;
-    message_filters::Subscriber<geometry_msgs::TwistStamped> altitude_yaw_sub;
-    typedef message_filters::sync_policies::ApproximateTime<geometry_msgs::PoseStamped, geometry_msgs::TwistStamped> sync_policy_velocity;
-    message_filters::Synchronizer<sync_policy_velocity> sync;
-    void angularVelocityCallback(const geometry_msgs::PoseStamped::ConstPtr& pose, const geometry_msgs::TwistStamped::ConstPtr& twist);
-
-    // message_filters::Subscriber<droneMsgsROS::dronePitchRollCmd> roll_pitch_dep_sub;
-    // message_filters::Subscriber<droneMsgsROS::droneDAltitudeCmd> altitude_dep_sub;
-    // message_filters::Subscriber<droneMsgsROS::droneDYawCmd> yaw_dep_sub;
-    // typedef message_filters::sync_policies::ApproximateTime<droneMsgsROS::dronePitchRollCmd, droneMsgsROS::droneDAltitudeCmd, droneMsgsROS::droneDYawCmd> sync_policy;
-    // message_filters::Synchronizer<sync_policy> synch;
-    // void rcCallback(const droneMsgsROS::dronePitchRollCmd& roll_pitch, const droneMsgsROS::droneDAltitudeCmd& altitude, const droneMsgsROS::droneDYawCmd& yaw);
-    
-    ros::Subscriber command_enum_sub;
-    void commandEnumCallback(const droneMsgsROS::droneCommand::ConstPtr& msg);
-
     std_msgs::String command_msg;
+    std::string command_alive;
+    ros::Time last_time_command;
+
+    bool keep_hover;
+
+    //Subscribers
+    ros::Subscriber flight_action_sub;
+    aerostack_msgs::FlightActionCommand flight_action_msg;
+    void flightActionCallback(const aerostack_msgs::FlightActionCommand::ConstPtr& msg);
+    ros::Subscriber actuator_command_thrust_sub;
+    void actuatorThrustCallback(const mav_msgs::RollPitchYawrateThrust::ConstPtr& msg);
+    ros::Subscriber reference_pose_sub;
+    void referencePoseCallback(const geometry_msgs::PoseStamped::ConstPtr& msg);
+    ros::Subscriber reference_speed_sub;
+    void referenceSpeedCallback(const geometry_msgs::TwistStamped::ConstPtr& msg);
+
+    void sendCommandToTello(std::string msg);
 };

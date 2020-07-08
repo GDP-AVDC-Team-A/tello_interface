@@ -41,6 +41,8 @@ VideoSocket::VideoSocket(unsigned short video_port) :
   av_init_packet(pkt);
 
   rgb_frame = av_frame_alloc();
+
+  av_log_set_level(AV_LOG_QUIET);
   if (!rgb_frame) throw std::runtime_error("Error allocating RGB frame");
   rgb_context = nullptr;
 

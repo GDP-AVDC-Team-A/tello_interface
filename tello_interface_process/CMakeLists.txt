@@ -28,6 +28,9 @@ set(DRIVER_TELLO_SOURCE_DIR
 set(DRIVER_TELLO_INCLUDE_DIR
 	src/include
 	)
+set(DRIVER_TELLO_TEST_DIR
+    src/test
+)
 
 set(DRIVER_TELLO_HEADER_FILES
         src/include/tello_camera_interface.h
@@ -39,12 +42,12 @@ set(DRIVER_TELLO_SOURCE_FILES
     )
 
 find_package(catkin REQUIRED
-                COMPONENTS roscpp std_msgs geometry_msgs sensor_msgs gazebo_msgs mavros robot_process droneMsgsROS lib_cvgutils tf_conversions cv_bridge tello_interface)
+                COMPONENTS roscpp std_msgs geometry_msgs sensor_msgs gazebo_msgs mavros mav_msgs robot_process aerostack_msgs lib_cvgutils tf_conversions cv_bridge tello_interface)
 
 
 catkin_package(
 #       INCLUDE_DIRS ${OKTODRIVER_INCLUDE_DIR}
-        CATKIN_DEPENDS roscpp std_msgs geometry_msgs sensor_msgs gazebo_msgs mavros robot_process droneMsgsROS lib_cvgutils tf_conversions tello_interface
+        CATKIN_DEPENDS roscpp std_msgs geometry_msgs sensor_msgs gazebo_msgs mavros mav_msgs robot_process aerostack_msgs lib_cvgutils tf_conversions tello_interface
   )
 
 
@@ -69,5 +72,14 @@ add_executable(tello_state_interface  src/source/tello_state_interface.cpp)
 add_dependencies(tello_state_interface ${catkin_EXPORTED_TARGETS})
 target_link_libraries(tello_state_interface tello_interface_process)
 target_link_libraries(tello_state_interface ${catkin_LIBRARIES})
+
+#############
+## Testing ##
+#############
+#if (CATKIN_ENABLE_TESTING)
+#  catkin_add_gtest(tello_interface_test ${DRIVER_TELLO_TEST_DIR}/tello_interface_test.cpp)
+#  target_link_libraries(tello_interface_test tello_interface_process)
+#  target_link_libraries(tello_interface_test ${catkin_LIBRARIES})
+#endif()
 
 set_target_properties(tello_interface_process PROPERTIES LINKER_LANGUAGE CXX)
