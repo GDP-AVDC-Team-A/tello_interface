@@ -54,7 +54,7 @@ void StateInterface::ownStart(){
     imu_pub = n.advertise<sensor_msgs::Imu>("sensor_measurement/imu", 1, true);
     battery_pub = n.advertise<sensor_msgs::BatteryState>("sensor_measurement/battery_state", 1, true);
     temperature_pub = n.advertise<sensor_msgs::Temperature>("sensor_measurement/temperature", 1, true);
-    sea_level_pub = n.advertise<geometry_msgs::PointStamped>("sensor_measurement/sea_level", 1, true);
+    sea_level_pub = n.advertise<geometry_msgs::PointStamped>("sensor_measurement/sea_level_altitude", 1, true);
     altitude_pub = n.advertise<geometry_msgs::PointStamped>("sensor_measurement/altitude", 1, true);
     flight_state_pub = n.advertise<aerostack_msgs::FlightState>("self_localization/flight_state", 1, true);
 
