@@ -33,8 +33,11 @@ Temperature measurement.
 - **sensor_measurement/altitude** ([geometry_msgs/PointStamped](http://docs.ros.org/api/geometry_msgs/html/msg/PointStamped.html))           
 Altitude measurement in meters.
 
-- **sensor_measurement/sea_level** ([geometry_msgs/PointStamped](http://docs.ros.org/api/geometry_msgs/html/msg/PointStamped.html))           
+- **sensor_measurement/sea_level_altitude** ([geometry_msgs/PointStamped](http://docs.ros.org/api/geometry_msgs/html/msg/PointStamped.html))           
 Sea level measurement in meters.
+
+- **self_localization/flight_state** ([aerostack_msgs/FlightState](https://bitbucket.org/visionaerialrobotics/aerostack_msgs/src/7c07e4317e20a1142226d513336a06a2ff585629/msg/FlightState.msg))           
+Flight state (landed, hovering, ...).
 
 - **sensor_measurement/camera** ([sensor_msgs/Camera](http://docs.ros.org/api/sensor_msgs/html/msg/Camera.html))           
 Camera video.
